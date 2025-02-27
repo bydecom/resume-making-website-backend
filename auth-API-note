@@ -1,0 +1,800 @@
+# Authentication & Admin API Documentation
+
+## 1. Authentication
+
+### 1.1 Register New User
+- **Endpoint**: POST /api/users/register
+- **Access**: Public
+- **Request Body**:
+```json
+{
+    "name": "John Doe",
+    "email": "john@example.com", 
+    "password": "password123"
+}
+```
+- **Success Response** (201):
+```json
+{
+    "status": "success",
+    "data": {
+        "_id": "user_id",
+        "name": "John Doe",
+        "email": "john@example.com",
+        "role": "user",
+        "isActive": true,
+        "createdAt": "2023-07-01T12:00:00.000Z",
+        "token": "JWT_TOKEN"
+    },
+    "message": "User registered successfully"
+}
+```
+
+### 1.2 Login
+- **Endpoint**: POST /api/users/login  
+- **Access**: Public
+- **Request Body**:
+```json
+{
+    "email": "john@example.com",
+    "password": "password123"
+}
+```
+- **Success Response** (200):
+```json
+{
+    "status": "success",
+    "data": {
+        "_id": "user_id",
+        "name": "John Doe", 
+        "email": "john@example.com",
+        "role": "user",
+        "isActive": true,
+        "createdAt": "2023-07-01T12:00:00.000Z",
+        "lastLogin": "2023-07-10T15:30:00.000Z",
+        "token": "JWT_TOKEN"
+    },
+    "message": "Login successful"
+}
+```
+
+### 1.3 Create Admin Account
+- **Endpoint**: POST /api/users/create-admin
+- **Access**: Public (requires admin secret)
+- **Request Body**:
+```json
+{
+    "name": "Admin User",
+    "email": "admin@example.com",
+    "password": "admin123",
+    "adminSecret": "your_admin_secret"
+}
+```
+- **Success Response** (201):
+```json
+{
+    "status": "success",
+    "data": {
+        "_id": "admin_id",
+        "name": "Admin User",
+        "email": "admin@example.com",
+        "role": "admin",
+        "isActive": true,
+        "createdAt": "2023-07-01T12:00:00.000Z",
+        "token": "JWT_TOKEN"
+    },
+    "message": "Admin created successfully"
+}
+```
+
+## 2. User Management (Admin Only)
+
+### 2.1 Get All Users
+- **Endpoint**: GET /api/users
+- **Access**: Private (Admin only)
+- **Headers**:
+```
+Authorization: Bearer JWT_TOKEN
+```
+- **Query Parameters**:
+  - `page`: Page number (default: 1)
+  - `limit`: Items per page (default: 10)
+  - `search`: Search by name or email
+  - `role`: Filter by role
+  - `isActive`: Filter by active status
+- **Success Response** (200):
+```json
+{
+    "status": "success",
+    "data": [
+        {
+            "_id": "user_id_1",
+            "name": "John Doe",
+            "email": "john@example.com",
+            "role": "user",
+            "isActive": true,
+            "createdAt": "2023-07-01T12:00:00.000Z",
+            "lastLogin": "2023-07-10T15:30:00.000Z"
+        },
+        {
+            "_id": "user_id_2",
+            "name": "Jane Smith",
+            "email": "jane@example.com",
+            "role": "user",
+            "isActive": true,
+            "createdAt": "2023-07-02T14:30:00.000Z",
+            "lastLogin": "2023-07-09T10:15:00.000Z"
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 10,
+        "total": 25,
+        "pages": 3
+    },
+    "message": "Users retrieved successfully"
+}
+```
+
+### 2.2 Get User by ID
+- **Endpoint**: GET /api/users/:userId
+- **Access**: Private (Admin only)
+- **Headers**:
+```
+Authorization: Bearer JWT_TOKEN
+```
+- **Success Response** (200):
+```json
+{
+    "status": "success",
+    "data": {
+        "_id": "user_id",
+        "name": "John Doe",
+        "email": "john@example.com",
+        "role": "user",
+        "isActive": true,
+        "createdAt": "2023-07-01T12:00:00.000Z",
+        "lastLogin": "2023-07-10T15:30:00.000Z"
+    },
+    "message": "User retrieved successfully"
+}
+```
+
+### 2.3 Update User
+- **Endpoint**: PUT /api/users/:userId
+- **Access**: Private (Admin only)
+- **Headers**:
+```
+Authorization: Bearer JWT_TOKEN
+```
+- **Request Body**:
+```json
+{
+    "name": "John Updated",
+    "email": "john.updated@example.com",
+    "role": "moderator",
+    "isActive": true
+}
+```
+- **Success Response** (200):
+```json
+{
+    "status": "success",
+    "data": {
+        "_id": "user_id",
+        "name": "John Updated",
+        "email": "john.updated@example.com",
+        "role": "moderator",
+        "isActive": true,
+        "createdAt": "2023-07-01T12:00:00.000Z",
+        "lastLogin": "2023-07-10T15:30:00.000Z"
+    },
+    "message": "User updated successfully"
+}
+```
+
+### 2.4 Delete User
+- **Endpoint**: DELETE /api/users/:userId
+- **Access**: Private (Admin only)
+- **Headers**:
+```
+Authorization: Bearer JWT_TOKEN
+```
+- **Success Response** (200):
+```json
+{
+    "status": "success",
+    "data": null,
+    "message": "User deleted successfully"
+}
+```
+
+## 3. Admin Logs
+
+### 3.1 Get Admin Logs
+- **Endpoint**: GET /api/admin/logs
+- **Access**: Private (Admin only)
+- **Headers**:
+```
+Authorization: Bearer JWT_TOKEN
+```
+- **Query Parameters**:
+  - `page`: Page number (default: 1)
+  - `limit`: Items per page (default: 10)
+  - `adminId`: Filter by admin ID
+  - `action`: Filter by action type (login, create_user, update_user, delete_user, etc.)
+  - `startDate`: Filter from date (YYYY-MM-DD)
+  - `endDate`: Filter to date (YYYY-MM-DD)
+- **Success Response** (200):
+```json
+{
+    "status": "success",
+    "data": [
+        {
+            "_id": "log_id_1",
+            "adminId": {
+                "_id": "admin_id",
+                "name": "Admin User",
+                "email": "admin@example.com"
+            },
+            "action": "login",
+            "details": {
+                "email": "admin@example.com"
+            },
+            "ipAddress": "192.168.1.1",
+            "userAgent": "Mozilla/5.0...",
+            "timestamp": "2023-07-10T15:30:00.000Z"
+        },
+        {
+            "_id": "log_id_2",
+            "adminId": {
+                "_id": "admin_id",
+                "name": "Admin User",
+                "email": "admin@example.com"
+            },
+            "action": "create_user",
+            "details": {
+                "userId": "user_id",
+                "email": "john@example.com"
+            },
+            "ipAddress": "192.168.1.1",
+            "userAgent": "Mozilla/5.0...",
+            "timestamp": "2023-07-10T16:00:00.000Z"
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 10,
+        "total": 50,
+        "pages": 5
+    },
+    "message": "Admin logs retrieved successfully"
+}
+```
+
+## 4. Front-end Implementation Guide
+
+### 4.1 Authentication
+
+```javascript
+// Login
+const handleLogin = async (email, password) => {
+    try {
+        const response = await axios.post('/api/users/login', {
+            email,
+            password
+        });
+        
+        const { token, role, _id } = response.data.data;
+        
+        // Lưu thông tin
+        localStorage.setItem('token', token);
+        localStorage.setItem('role', role);
+        localStorage.setItem('userId', _id);
+        
+        // Chuyển hướng dựa trên role
+        if (role === 'admin') {
+            navigate('/admin');
+        } else {
+            navigate('/home');
+        }
+    } catch (error) {
+        // Xử lý lỗi
+        console.error('Login error:', error.response?.data?.message || error.message);
+    }
+};
+
+// Logout
+const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('userId');
+    navigate('/login');
+};
+```
+
+### 4.2 API Calls with Authentication
+
+```javascript
+// Axios instance with auth header
+const api = axios.create({
+    baseURL: 'http://localhost:5000/api'
+});
+
+// Add auth token to every request
+api.interceptors.request.use(config => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
+// Handle token expiration
+api.interceptors.response.use(
+    response => response,
+    error => {
+        if (error.response?.status === 401) {
+            // Token expired or invalid
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            localStorage.removeItem('userId');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+```
+
+### 4.3 Admin Dashboard Components
+
+#### User Management Component
+
+```jsx
+import React, { useState, useEffect } from 'react';
+import api from '../utils/api';
+
+const UserManagement = () => {
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState({});
+    const [filters, setFilters] = useState({
+        page: 1,
+        limit: 10,
+        search: '',
+        role: '',
+        isActive: ''
+    });
+
+    // Fetch users
+    const fetchUsers = async () => {
+        try {
+            setLoading(true);
+            
+            const queryParams = new URLSearchParams();
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value) queryParams.append(key, value);
+            });
+            
+            const response = await api.get(`/users?${queryParams.toString()}`);
+            setUsers(response.data.data);
+            setPagination(response.data.pagination);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Delete user
+    const deleteUser = async (userId) => {
+        if (!window.confirm('Are you sure you want to delete this user?')) return;
+        
+        try {
+            await api.delete(`/users/${userId}`);
+            fetchUsers(); // Refresh list
+            alert('User deleted successfully');
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            alert(`Error: ${error.response?.data?.message || error.message}`);
+        }
+    };
+
+    // Handle filter changes
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setFilters(prev => ({
+            ...prev,
+            [name]: value,
+            page: 1 // Reset to page 1 when filters change
+        }));
+    };
+
+    // Apply filters
+    const applyFilters = (e) => {
+        e.preventDefault();
+        fetchUsers();
+    };
+
+    // Handle pagination
+    const changePage = (newPage) => {
+        setFilters(prev => ({
+            ...prev,
+            page: newPage
+        }));
+    };
+
+    useEffect(() => {
+        fetchUsers();
+    }, [filters.page, filters.limit]);
+
+    return (
+        <div className="user-management">
+            <h2>User Management</h2>
+            
+            {/* Filters */}
+            <form onSubmit={applyFilters} className="filters-form">
+                <input
+                    type="text"
+                    name="search"
+                    placeholder="Search by name or email"
+                    value={filters.search}
+                    onChange={handleFilterChange}
+                />
+                
+                <select name="role" value={filters.role} onChange={handleFilterChange}>
+                    <option value="">All Roles</option>
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                    <option value="moderator">Moderator</option>
+                </select>
+                
+                <select name="isActive" value={filters.isActive} onChange={handleFilterChange}>
+                    <option value="">All Status</option>
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                </select>
+                
+                <button type="submit">Apply Filters</button>
+            </form>
+            
+            {/* Users Table */}
+            {loading ? (
+                <p>Loading...</p>
+            ) : (
+                <>
+                    <table className="users-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Created At</th>
+                                <th>Last Login</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {users.map(user => (
+                                <tr key={user._id}>
+                                    <td>{user.name}</td>
+                                    <td>{user.email}</td>
+                                    <td>{user.role}</td>
+                                    <td>{user.isActive ? 'Active' : 'Inactive'}</td>
+                                    <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                                    <td>{user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}</td>
+                                    <td>
+                                        <button 
+                                            onClick={() => navigate(`/admin/users/edit/${user._id}`)}
+                                            className="edit-btn"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button 
+                                            onClick={() => deleteUser(user._id)}
+                                            className="delete-btn"
+                                        >
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    
+                    {/* Pagination */}
+                    <div className="pagination">
+                        <button 
+                            onClick={() => changePage(pagination.page - 1)}
+                            disabled={pagination.page <= 1}
+                        >
+                            Previous
+                        </button>
+                        
+                        <span>
+                            Page {pagination.page} of {pagination.pages}
+                        </span>
+                        
+                        <button 
+                            onClick={() => changePage(pagination.page + 1)}
+                            disabled={pagination.page >= pagination.pages}
+                        >
+                            Next
+                        </button>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+};
+
+export default UserManagement;
+```
+
+#### Admin Logs Component
+
+```jsx
+import React, { useState, useEffect } from 'react';
+import api from '../utils/api';
+
+const AdminLogs = () => {
+    const [logs, setLogs] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState({});
+    const [filters, setFilters] = useState({
+        page: 1,
+        limit: 10,
+        action: '',
+        startDate: '',
+        endDate: ''
+    });
+
+    // Fetch logs
+    const fetchLogs = async () => {
+        try {
+            setLoading(true);
+            
+            const queryParams = new URLSearchParams();
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value) queryParams.append(key, value);
+            });
+            
+            const response = await api.get(`/admin/logs?${queryParams.toString()}`);
+            setLogs(response.data.data);
+            setPagination(response.data.pagination);
+        } catch (error) {
+            console.error('Error fetching logs:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Handle filter changes
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setFilters(prev => ({
+            ...prev,
+            [name]: value,
+            page: 1 // Reset to page 1 when filters change
+        }));
+    };
+
+    // Apply filters
+    const applyFilters = (e) => {
+        e.preventDefault();
+        fetchLogs();
+    };
+
+    // Handle pagination
+    const changePage = (newPage) => {
+        setFilters(prev => ({
+            ...prev,
+            page: newPage
+        }));
+    };
+
+    useEffect(() => {
+        fetchLogs();
+    }, [filters.page, filters.limit]);
+
+    return (
+        <div className="admin-logs">
+            <h2>Admin Activity Logs</h2>
+            
+            {/* Filters */}
+            <form onSubmit={applyFilters} className="filters-form">
+                <select name="action" value={filters.action} onChange={handleFilterChange}>
+                    <option value="">All Actions</option>
+                    <option value="login">Login</option>
+                    <option value="create_user">Create User</option>
+                    <option value="update_user">Update User</option>
+                    <option value="delete_user">Delete User</option>
+                    <option value="create_template">Create Template</option>
+                    <option value="update_template">Update Template</option>
+                    <option value="delete_template">Delete Template</option>
+                    <option value="system_config">System Config</option>
+                    <option value="other">Other</option>
+                </select>
+                
+                <input
+                    type="date"
+                    name="startDate"
+                    value={filters.startDate}
+                    onChange={handleFilterChange}
+                    placeholder="Start Date"
+                />
+                
+                <input
+                    type="date"
+                    name="endDate"
+                    value={filters.endDate}
+                    onChange={handleFilterChange}
+                    placeholder="End Date"
+                />
+                
+                <button type="submit">Apply Filters</button>
+            </form>
+            
+            {/* Logs Table */}
+            {loading ? (
+                <p>Loading...</p>
+            ) : (
+                <>
+                    <table className="logs-table">
+                        <thead>
+                            <tr>
+                                <th>Admin</th>
+                                <th>Action</th>
+                                <th>Details</th>
+                                <th>IP Address</th>
+                                <th>Date & Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {logs.map(log => (
+                                <tr key={log._id}>
+                                    <td>{log.adminId.name} ({log.adminId.email})</td>
+                                    <td>{log.action}</td>
+                                    <td>
+                                        <pre>{JSON.stringify(log.details, null, 2)}</pre>
+                                    </td>
+                                    <td>{log.ipAddress}</td>
+                                    <td>{new Date(log.timestamp).toLocaleString()}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    
+                    {/* Pagination */}
+                    <div className="pagination">
+                        <button 
+                            onClick={() => changePage(pagination.page - 1)}
+                            disabled={pagination.page <= 1}
+                        >
+                            Previous
+                        </button>
+                        
+                        <span>
+                            Page {pagination.page} of {pagination.pages}
+                        </span>
+                        
+                        <button 
+                            onClick={() => changePage(pagination.page + 1)}
+                            disabled={pagination.page >= pagination.pages}
+                        >
+                            Next
+                        </button>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+};
+
+export default AdminLogs;
+```
+
+### 4.4 Protected Routes Setup
+
+```jsx
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Home from './pages/Home';
+import AdminDashboard from './pages/admin/Dashboard';
+import UserManagement from './pages/admin/UserManagement';
+import AdminLogs from './pages/admin/AdminLogs';
+import NotFound from './pages/NotFound';
+import Unauthorized from './pages/Unauthorized';
+
+// Protected Route Component
+const ProtectedRoute = ({ children, allowedRole }) => {
+    const token = localStorage.getItem('token');
+    const userRole = localStorage.getItem('role');
+    
+    if (!token) {
+        return <Navigate to="/login" />;
+    }
+    
+    if (allowedRole && userRole !== allowedRole) {
+        return <Navigate to="/unauthorized" />;
+    }
+    
+    return children;
+};
+
+const AppRoutes = () => {
+    return (
+        <BrowserRouter>
+            <Routes>
+                {/* Public Routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/unauthorized" element={<Unauthorized />} />
+                
+                {/* User Routes */}
+                <Route 
+                    path="/" 
+                    element={
+                        <ProtectedRoute>
+                            <Home />
+                        </ProtectedRoute>
+                    } 
+                />
+                
+                {/* Admin Routes */}
+                <Route 
+                    path="/admin" 
+                    element={
+                        <ProtectedRoute allowedRole="admin">
+                            <AdminDashboard />
+                        </ProtectedRoute>
+                    } 
+                />
+                <Route 
+                    path="/admin/users" 
+                    element={
+                        <ProtectedRoute allowedRole="admin">
+                            <UserManagement />
+                        </ProtectedRoute>
+                    } 
+                />
+                <Route 
+                    path="/admin/logs" 
+                    element={
+                        <ProtectedRoute allowedRole="admin">
+                            <AdminLogs />
+                        </ProtectedRoute>
+                    } 
+                />
+                
+                {/* 404 Route */}
+                <Route path="*" element={<NotFound />} />
+            </Routes>
+        </BrowserRouter>
+    );
+};
+
+export default AppRoutes;
+```
+
+## 5. Error Handling
+
+Common error responses:
+- 400: Validation error
+- 401: Authentication error (invalid credentials/token)
+- 403: Authorization error (insufficient role)
+- 404: Resource not found
+- 500: Server error
+
+## 6. Notes
+
+1. Mỗi user chỉ có một role duy nhất ('user', 'admin', hoặc 'moderator')
+2. Token JWT được sử dụng cho authentication
+3. Role được sử dụng cho authorization
+4. Luôn xóa token và role khi logout
+5. Implement proper error handling và loading states
+6. Thời gian tạo tài khoản (createdAt) và lần đăng nhập cuối (lastLogin) được lưu trữ
+7. Mọi hành động của admin đều được ghi log
