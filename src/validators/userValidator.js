@@ -118,9 +118,58 @@ const createAdminValidator = Joi.object({
         })
 });
 
+const updateUserValidator = Joi.object({
+    name: Joi.string()
+        .min(2)
+        .max(50)
+        .trim()
+        .messages({
+            'string.min': 'Name must be at least 2 characters',
+            'string.max': 'Name cannot be more than 50 characters'
+        }),
+    email: Joi.string()
+        .email()
+        .trim()
+        .lowercase()
+        .messages({
+            'string.email': 'Please enter a valid email'
+        }),
+    isActive: Joi.boolean()
+}).min(1).messages({
+    'object.min': 'At least one field must be updated'
+});
+
+const updateUserWithPasswordValidator = Joi.object({
+    name: Joi.string()
+        .min(2)
+        .max(50)
+        .trim()
+        .messages({
+            'string.min': 'Name must be at least 2 characters',
+            'string.max': 'Name cannot be more than 50 characters'
+        }),
+    email: Joi.string()
+        .email()
+        .trim()
+        .lowercase()
+        .messages({
+            'string.email': 'Please enter a valid email'
+        }),
+    currentPassword: Joi.string()
+        .required()
+        .messages({
+            'string.empty': 'Current password is required',
+            'any.required': 'Current password is required'
+        })
+}).min(1).messages({
+    'object.min': 'At least one field must be updated'
+});
+
 module.exports = {
     registerValidator,
     loginValidator,
     changePasswordValidator,
-    createAdminValidator
+    createAdminValidator,
+    updateUserValidator,
+    updateUserWithPasswordValidator
 }; 

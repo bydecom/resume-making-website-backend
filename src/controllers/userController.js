@@ -1,6 +1,6 @@
 const User = require('../models/userModel');
 const generateToken = require('../utils/generateToken');
-const { registerValidator, loginValidator, changePasswordValidator, createAdminValidator } = require('../validators/userValidator');
+const { registerValidator, loginValidator, changePasswordValidator, createAdminValidator, updateUserValidator, updateUserWithPasswordValidator } = require('../validators/userValidator');
 const { createAdminLog } = require('../services/adminLogService');
 
 class UserController {
@@ -363,6 +363,36 @@ class UserController {
         }
     }
 
+    // @desc    Get user by ID (admin only)
+    // @route   GET /api/users/:userId
+    // @access  Private (Admin only)
+    async getUserById(req, res) {
+        try {
+            const user = await User.findById(req.params.userId).select('-password');
+            
+            if (!user) {
+                return res.status(404).json({
+                    status: 'error',
+                    code: 'USER_NOT_FOUND',
+                    message: 'User not found'
+                });
+            }
+
+            return res.status(200).json({
+                status: 'success',
+                data: user,
+                message: 'User retrieved successfully'
+            });
+        } catch (error) {
+            console.error('Get User Error:', error);
+            return res.status(500).json({
+                status: 'error',
+                code: 'SERVER_ERROR',
+                message: 'Internal server error'
+            });
+        }
+    }
+
     // @desc    Delete user
     // @route   DELETE /api/users/:userId
     // @access  Private (Admin only)
@@ -408,6 +438,164 @@ class UserController {
 
         } catch (error) {
             console.error('Delete User Error:', error);
+            return res.status(500).json({
+                status: 'error',
+                code: 'SERVER_ERROR',
+                message: 'Internal server error'
+            });
+        }
+    }
+
+    // @desc    Update user profile (for regular users)
+    // @route   PUT /api/users/me
+    // @access  Private
+    async updateProfile(req, res) {
+        try {
+            // Validate request body
+            const { error } = updateUserWithPasswordValidator.validate(req.body);
+            if (error) {
+                return res.status(400).json({
+                    status: 'error',
+                    code: 'VALIDATION_ERROR',
+                    message: error.details[0].message
+                });
+            }
+
+            const user = await User.findById(req.user._id).select('+password');
+            if (!user) {
+                return res.status(404).json({
+                    status: 'error',
+                    code: 'USER_NOT_FOUND',
+                    message: 'User not found'
+                });
+            }
+
+            // Verify current password
+            const isMatch = await user.matchPassword(req.body.currentPassword);
+            if (!isMatch) {
+                return res.status(401).json({
+                    status: 'error',
+                    code: 'INVALID_PASSWORD',
+                    message: 'Current password is incorrect'
+                });
+            }
+
+            // Update fields
+            if (req.body.name) user.name = req.body.name;
+            
+            // Kiểm tra email mới có trùng với email người dùng khác không
+            if (req.body.email && req.body.email !== user.email) {
+                const existingUser = await User.findOne({ email: req.body.email });
+                if (existingUser) {
+                    return res.status(400).json({
+                        status: 'error',
+                        code: 'EMAIL_EXISTS',
+                        message: 'Email already in use'
+                    });
+                }
+                user.email = req.body.email;
+            }
+
+            const updatedUser = await user.save();
+
+            return res.status(200).json({
+                status: 'success',
+                data: {
+                    _id: updatedUser._id,
+                    name: updatedUser.name,
+                    email: updatedUser.email,
+                    role: updatedUser.role,
+                    isActive: updatedUser.isActive,
+                    createdAt: updatedUser.createdAt,
+                    lastLogin: updatedUser.lastLogin
+                },
+                message: 'Profile updated successfully'
+            });
+
+        } catch (error) {
+            console.error('Update Profile Error:', error);
+            return res.status(500).json({
+                status: 'error',
+                code: 'SERVER_ERROR',
+                message: 'Internal server error'
+            });
+        }
+    }
+
+    // @desc    Update user (admin only)
+    // @route   PUT /api/users/:userId
+    // @access  Private (Admin only)
+    async updateUser(req, res) {
+        try {
+            // Validate request body
+            const { error } = updateUserValidator.validate(req.body);
+            if (error) {
+                return res.status(400).json({
+                    status: 'error',
+                    code: 'VALIDATION_ERROR',
+                    message: error.details[0].message
+                });
+            }
+
+            const user = await User.findById(req.params.userId);
+            if (!user) {
+                return res.status(404).json({
+                    status: 'error',
+                    code: 'USER_NOT_FOUND',
+                    message: 'User not found'
+                });
+            }
+
+            // Update fields
+            if (req.body.name) user.name = req.body.name;
+            
+            // Kiểm tra email mới có trùng với email người dùng khác không
+            if (req.body.email && req.body.email !== user.email) {
+                const existingUser = await User.findOne({ email: req.body.email });
+                if (existingUser) {
+                    return res.status(400).json({
+                        status: 'error',
+                        code: 'EMAIL_EXISTS',
+                        message: 'Email already in use'
+                    });
+                }
+                user.email = req.body.email;
+            }
+
+            // Chỉ admin mới có thể cập nhật trạng thái active
+            if (req.body.isActive !== undefined) {
+                user.isActive = req.body.isActive;
+            }
+
+            const updatedUser = await user.save();
+
+            // Ghi log admin
+            await createAdminLog({
+                adminId: req.user._id,
+                action: 'update_user',
+                details: {
+                    userId: updatedUser._id,
+                    email: updatedUser.email,
+                    updatedFields: Object.keys(req.body)
+                }
+            }, req);
+
+            return res.status(200).json({
+                status: 'success',
+                data: {
+                    _id: updatedUser._id,
+                    name: updatedUser.name,
+                    email: updatedUser.email,
+                    role: updatedUser.role,
+                    isActive: updatedUser.isActive,
+                    createdAt: updatedUser.createdAt,
+                    lastLogin: updatedUser.lastLogin
+                },
+                message: 'User updated successfully'
+            });
+
+        } catch (error) {
+            console.error('Update User Error:', error);
             return res.status(500).json({
                 status: 'error',
                 code: 'SERVER_ERROR',

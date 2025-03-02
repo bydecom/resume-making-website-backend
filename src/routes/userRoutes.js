@@ -294,6 +294,52 @@ router.get('/',
 /**
  * @swagger
  * /api/users/{userId}:
+ *   get:
+ *     summary: Get user by ID (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: userId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   $ref: '#/components/schemas/User'
+ *                 message:
+ *                   type: string
+ *                   example: User retrieved successfully
+ *       401:
+ *         description: Not authorized
+ *       403:
+ *         description: Not admin
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+router.get('/:userId', 
+    protect, 
+    hasRole(['admin']), 
+    hasPermission(['view_users']), 
+    userController.getUserById
+);
+
+/**
+ * @swagger
+ * /api/users/{userId}:
  *   delete:
  *     summary: Delete a user (admin only)
  *     tags: [Users]
@@ -335,6 +381,166 @@ router.delete('/:userId',
     hasRole(['admin']), 
     hasPermission(['manage_users']), 
     userController.deleteUser
+);
+
+/**
+ * @swagger
+ * /api/users/me:
+ *   put:
+ *     summary: Update user profile (requires current password)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: User's full name
+ *                 example: John Updated
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: User's email address
+ *                 example: john.updated@example.com
+ *               currentPassword:
+ *                 type: string
+ *                 format: password
+ *                 description: Current password for verification
+ *                 example: password123
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                     isActive:
+ *                       type: boolean
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     lastLogin:
+ *                       type: string
+ *                       format: date-time
+ *                 message:
+ *                   type: string
+ *                   example: Profile updated successfully
+ *       400:
+ *         description: Validation error or Email already in use
+ *       401:
+ *         description: Not authorized or Current password is incorrect
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+router.put('/me', protect, userController.updateProfile);
+
+/**
+ * @swagger
+ * /api/users/{userId}:
+ *   put:
+ *     summary: Update user (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: userId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: User's full name
+ *                 example: John Updated
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: User's email address
+ *                 example: john.updated@example.com
+ *               isActive:
+ *                 type: boolean
+ *                 description: User's active status
+ *                 example: true
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                     isActive:
+ *                       type: boolean
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     lastLogin:
+ *                       type: string
+ *                       format: date-time
+ *                 message:
+ *                   type: string
+ *                   example: User updated successfully
+ *       400:
+ *         description: Validation error or Email already in use
+ *       401:
+ *         description: Not authorized
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+router.put('/:userId', 
+    protect, 
+    hasRole(['admin']), 
+    hasPermission(['manage_users']), 
+    userController.updateUser
 );
 
 module.exports = router; 
