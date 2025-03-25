@@ -1,0 +1,296 @@
+# CV Management API Documentation
+
+Hệ thống API cho phép người dùng tạo và quản lý nhiều CV khác nhau với đầy đủ thông tin cá nhân và kinh nghiệm.
+
+## 1. Xác thực
+
+Tất cả các API liên quan đến CV đều yêu cầu xác thực bằng JWT token. Token có thể lấy được từ các endpoints đăng nhập hoặc đăng ký trong Authentication API.
+
+- Header xác thực: `Authorization: Bearer JWT_TOKEN`
+
+## 2. Quản lý CV
+
+### 2.1. Tạo CV mới
+
+- **Endpoint**: POST /api/cv
+- **Access**: Private (yêu cầu token)
+- **Request Body**:
+```json
+{
+  "name": "My Professional CV 2023",
+  "personalInfo": {
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "phone": "+1234567890",
+    "location": "New York",
+    "country": "USA",
+    "website": "www.johndoe.com",
+    "linkedin": "linkedin.com/in/johndoe"
+  },
+  "summary": "Experienced software developer with 5+ years of experience in web development and cloud technologies.",
+  "education": [
+    {
+      "degree": "Bachelor of Computer Science",
+      "school": "University of Technology",
+      "startDate": "2015-09",
+      "endDate": "2019-06",
+      "description": "Graduated with honors. Specialization in Software Engineering.",
+      "isPresent": false
+    }
+  ],
+  "experience": [
+    {
+      "title": "Senior Developer",
+      "company": "Tech Solutions Inc.",
+      "startDate": "2019-07",
+      "endDate": "",
+      "description": "Leading a team of 5 developers. Implemented CI/CD pipeline reducing deployment time by 40%.",
+      "isPresent": true
+    }
+  ],
+  "skills": [
+    "JavaScript",
+    "React",
+    "Node.js",
+    "Python",
+    "AWS",
+    "Docker",
+    "SQL",
+    "Git"
+  ],
+  "projects": [
+    {
+      "title": "E-commerce Platform",
+      "role": "Lead Developer",
+      "startDate": "2020-03",
+      "endDate": "2020-11",
+      "description": "Built a full-featured e-commerce platform with payment integration.",
+      "url": "https://github.com/johndoe/ecommerce",
+      "isPresent": false
+    }
+  ],
+  "certifications": [
+    {
+      "name": "AWS Certified Solutions Architect",
+      "issuer": "Amazon Web Services",
+      "date": "2021-05",
+      "url": "https://aws.amazon.com/certification"
+    }
+  ],
+  "languages": [
+    {
+      "language": "English",
+      "proficiency": "Native"
+    },
+    {
+      "language": "Spanish",
+      "proficiency": "Intermediate"
+    }
+  ],
+  "additionalInfo": {
+    "interests": "Machine learning, blockchain technology, hiking, photography",
+    "achievements": "Published 2 research papers on AI applications in healthcare",
+    "publications": "Smith J., Doe J. (2022). AI in Modern Healthcare. Journal of Technology in Medicine, 15(2), 45-58.",
+    "references": "Available upon request"
+  },
+  "customFields": [
+    {
+      "label": "Portfolio",
+      "value": "www.johndoe-portfolio.com"
+    },
+    {
+      "label": "GitHub",
+      "value": "github.com/johndoe"
+    }
+  ]
+}
+```
+- **Success Response** (201):
+```json
+{
+  "status": "success",
+  "data": {
+    "_id": "cv_id",
+    "name": "My Professional CV 2023",
+    "userId": "user_id",
+    "personalInfo": { ... },
+    "summary": "...",
+    "education": [ ... ],
+    "experience": [ ... ],
+    "skills": [ ... ],
+    "projects": [ ... ],
+    "certifications": [ ... ],
+    "languages": [ ... ],
+    "additionalInfo": { ... },
+    "customFields": [ ... ],
+    "status": "draft",
+    "isDefault": false,
+    "createdAt": "2023-07-01T12:00:00.000Z",
+    "updatedAt": "2023-07-01T12:00:00.000Z"
+  },
+  "message": "CV created successfully"
+}
+```
+
+### 2.2. Lấy danh sách CV
+
+- **Endpoint**: GET /api/cv
+- **Access**: Private (yêu cầu token)
+- **Query Parameters**:
+  - `page`: Số trang (mặc định: 1)
+  - `limit`: Số lượng CV trên mỗi trang (mặc định: 10)
+- **Success Response** (200):
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "_id": "cv_id_1",
+      "name": "My Professional CV 2023",
+      "createdAt": "2023-07-01T12:00:00.000Z",
+      "updatedAt": "2023-07-01T12:00:00.000Z",
+      "status": "draft",
+      "isDefault": false
+    },
+    {
+      "_id": "cv_id_2",
+      "name": "Creative CV",
+      "createdAt": "2023-07-02T12:00:00.000Z",
+      "updatedAt": "2023-07-02T12:00:00.000Z",
+      "status": "published",
+      "isDefault": true
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 2,
+    "pages": 1
+  },
+  "message": "CVs retrieved successfully"
+}
+```
+
+### 2.3. Lấy chi tiết một CV
+
+- **Endpoint**: GET /api/cv/:id
+- **Access**: Private (yêu cầu token)
+- **Parameters**:
+  - `id`: ID của CV
+- **Success Response** (200):
+```json
+{
+  "status": "success",
+  "data": {
+    "_id": "cv_id",
+    "name": "My Professional CV 2023",
+    "userId": "user_id",
+    "personalInfo": { ... },
+    "summary": "...",
+    "education": [ ... ],
+    "experience": [ ... ],
+    "skills": [ ... ],
+    "projects": [ ... ],
+    "certifications": [ ... ],
+    "languages": [ ... ],
+    "additionalInfo": { ... },
+    "customFields": [ ... ],
+    "status": "draft",
+    "isDefault": false,
+    "createdAt": "2023-07-01T12:00:00.000Z",
+    "updatedAt": "2023-07-01T12:00:00.000Z"
+  },
+  "message": "CV retrieved successfully"
+}
+```
+
+### 2.4. Cập nhật CV
+
+- **Endpoint**: PUT /api/cv/:id
+- **Access**: Private (yêu cầu token)
+- **Parameters**:
+  - `id`: ID của CV
+- **Request Body**: Tương tự như khi tạo CV, nhưng các trường là tùy chọn
+- **Success Response** (200):
+```json
+{
+  "status": "success",
+  "data": {
+    "_id": "cv_id",
+    "name": "Updated CV Name",
+    "userId": "user_id",
+    "personalInfo": { ... },
+    "summary": "...",
+    "education": [ ... ],
+    "experience": [ ... ],
+    "skills": [ ... ],
+    "projects": [ ... ],
+    "certifications": [ ... ],
+    "languages": [ ... ],
+    "additionalInfo": { ... },
+    "customFields": [ ... ],
+    "status": "published",
+    "isDefault": true,
+    "createdAt": "2023-07-01T12:00:00.000Z",
+    "updatedAt": "2023-07-05T15:30:00.000Z"
+  },
+  "message": "CV updated successfully"
+}
+```
+
+### 2.5. Cập nhật tên CV
+
+- **Endpoint**: PATCH /api/cv/:id/name
+- **Access**: Private (yêu cầu token)
+- **Parameters**:
+  - `id`: ID của CV
+- **Request Body**:
+```json
+{
+  "name": "My New CV Name"
+}
+```
+- **Success Response** (200):
+```json
+{
+  "status": "success",
+  "data": {
+    "_id": "cv_id",
+    "name": "My New CV Name"
+  },
+  "message": "CV name updated successfully"
+}
+```
+
+### 2.6. Xóa CV
+
+- **Endpoint**: DELETE /api/cv/:id
+- **Access**: Private (yêu cầu token)
+- **Parameters**:
+  - `id`: ID của CV
+- **Success Response** (200):
+```json
+{
+  "status": "success",
+  "message": "CV deleted successfully"
+}
+```
+
+## 3. Các mã lỗi
+
+- 400: Bad Request (INVALID_ID, VALIDATION_ERROR)
+- 401: Authentication error (NO_TOKEN, INVALID_TOKEN)
+- 403: Authorization error (NOT_AUTHORIZED)
+- 404: Resource not found (CV_NOT_FOUND)
+- 500: Server error (SERVER_ERROR)
+
+## 4. Lưu ý
+
+1. Khi tạo CV, nếu không cung cấp tên, hệ thống sẽ tự tạo tên mặc định dạng "CV - [ngày hiện tại]"
+2. Trường `isPresent` trong education, experience và projects xác định xem đang diễn ra hay đã kết thúc
+3. Để lấy thông tin chi tiết của CV, sử dụng endpoint GET /api/cv/:id
+4. Mỗi user có thể có nhiều CV, nhưng chỉ được truy cập, cập nhật hoặc xóa CV do chính họ tạo ra
+5. CV có hai trạng thái: "draft" (nháp) và "published" (đã xuất bản)
+6. Có thể đánh dấu một CV là mặc định (isDefault = true) để hiển thị nổi bật trong ứng dụng
+7. Để chỉ cập nhật tên CV, sử dụng endpoint PATCH /api/cv/:id/name thay vì cập nhật toàn bộ CV 

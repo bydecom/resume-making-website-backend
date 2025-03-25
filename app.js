@@ -37,10 +37,12 @@ app.get('/', (req, res) => {
 // Import routes
 const userRoutes = require('./src/routes/userRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
+const cvRoutes = require('./src/routes/cvRoutes');
 
 // Mount routes
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/cv', cvRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

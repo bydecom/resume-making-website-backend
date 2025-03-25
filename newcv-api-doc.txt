@@ -1,0 +1,331 @@
+# Thiết kế hệ thống CV cho nhiều CV trên mỗi User với JWT
+
+Dựa trên thông tin bạn cung cấp, tôi sẽ hướng dẫn cách triển khai hệ thống cho phép mỗi User có nhiều CV và sử dụng JWT để xác thực.
+
+## 1. Cấu trúc database MongoDB
+
+### Schema cho CV Collection
+```javascript
+const mongoose = require('mongoose');
+
+const cvSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true // Đánh index để tăng tốc truy vấn
+  },
+  name: {
+    type: String,
+    default: `CV - ${new Date().toLocaleDateString()}`
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  },
+  personalInfo: {
+    firstName: String,
+    lastName: String,
+    email: String,
+    phone: String,
+    location: String,
+    country: String,
+    website: String,
+    linkedin: String
+  },
+  summary: String,
+  education: [{
+    degree: String,
+    school: String,
+    startDate: String,
+    endDate: String,
+    description: String,
+    isPresent: Boolean
+  }],
+  experience: [{
+    title: String,
+    company: String,
+    startDate: String,
+    endDate: String,
+    description: String,
+    isPresent: Boolean
+  }],
+  skills: [String],
+  projects: [{
+    title: String,
+    role: String,
+    startDate: String,
+    endDate: String,
+    description: String,
+    url: String,
+    isPresent: Boolean
+  }],
+  certifications: [{
+    name: String,
+    issuer: String,
+    date: String,
+    url: String
+  }],
+  languages: [{
+    language: String,
+    proficiency: String
+  }],
+  additionalInfo: {
+    interests: String,
+    achievements: String,
+    publications: String,
+    references: String
+  },
+  customFields: [{
+    label: String,
+    value: String
+  }]
+}, { timestamps: true });
+
+const CV = mongoose.model('CV', cvSchema);
+```
+
+## 2. API Endpoints cho quản lý CV
+
+### 2.1. Tạo mới hoặc cập nhật CV
+
+```javascript
+// Middleware xác thực JWT
+const authenticateJWT = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader) {
+    return res.status(401).json({ message: 'Authentication token is required' });
+  }
+  
+  const token = authHeader.split(' ')[1];
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // { id: '...', email: '...' }
+    next();
+  } catch (error) {
+    return res.status(403).json({ message: 'Invalid or expired token' });
+  }
+};
+
+// Endpoint tạo/cập nhật CV
+app.post('/api/cv', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.id; // Lấy từ JWT đã giải mã
+    const cvData = req.body;
+    const cvId = req.body._id; // Nếu có _id, đây là cập nhật CV
+    
+    if (cvId) {
+      // Cập nhật CV hiện có
+      const cv = await CV.findOneAndUpdate(
+        { _id: cvId, userId }, // Đảm bảo CV thuộc về user hiện tại
+        { 
+          ...cvData,
+          updatedAt: new Date()
+        },
+        { new: true }
+      );
+      
+      if (!cv) {
+        return res.status(404).json({ message: 'CV not found or not authorized' });
+      }
+      
+      return res.json(cv);
+    } else {
+      // Tạo CV mới
+      const newCV = new CV({
+        userId,
+        name: cvData.name || `CV - ${new Date().toLocaleDateString()}`,
+        ...cvData
+      });
+      
+      await newCV.save();
+      return res.status(201).json(newCV);
+    }
+  } catch (error) {
+    console.error('Error saving CV:', error);
+    return res.status(500).json({ message: 'Failed to save CV', error: error.message });
+  }
+});
+```
+
+### 2.2. Lấy danh sách CV của user
+
+```javascript
+app.get('/api/cv', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Lấy tất cả CV của user, có thể thêm pagination nếu cần
+    const cvs = await CV.find({ userId })
+      .select('_id name createdAt updatedAt') // Chỉ lấy thông tin cơ bản
+      .sort({ updatedAt: -1 }); // Sắp xếp theo thời gian cập nhật mới nhất
+    
+    return res.json(cvs);
+  } catch (error) {
+    console.error('Error fetching CVs:', error);
+    return res.status(500).json({ message: 'Failed to fetch CVs', error: error.message });
+  }
+});
+```
+
+### 2.3. Lấy chi tiết một CV
+
+```javascript
+app.get('/api/cv/:id', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const cvId = req.params.id;
+    
+    const cv = await CV.findOne({ _id: cvId, userId });
+    
+    if (!cv) {
+      return res.status(404).json({ message: 'CV not found or not authorized' });
+    }
+    
+    return res.json(cv);
+  } catch (error) {
+    console.error('Error fetching CV:', error);
+    return res.status(500).json({ message: 'Failed to fetch CV', error: error.message });
+  }
+});
+```
+
+### 2.4. Xóa CV
+
+```javascript
+app.delete('/api/cv/:id', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const cvId = req.params.id;
+    
+    const result = await CV.findOneAndDelete({ _id: cvId, userId });
+    
+    if (!result) {
+      return res.status(404).json({ message: 'CV not found or not authorized' });
+    }
+    
+    return res.json({ message: 'CV deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting CV:', error);
+    return res.status(500).json({ message: 'Failed to delete CV', error: error.message });
+  }
+});
+```
+
+
+```
+
+## 3. Cấu trúc JSON cuối cùng mà Front-end sẽ gửi cho backend
+
+Dưới đây là cấu trúc JSON hoàn chỉnh sẽ được gửi từ frontend đến backend:
+
+```json
+{
+  "name": "My Professional CV 2023",
+  "_id": "60d5e8a7b9d7a92a4c9e4d2e", // Chỉ có khi cập nhật CV hiện có
+  "personalInfo": {
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "phone": "+1234567890",
+    "location": "New York",
+    "country": "USA",
+    "website": "www.johndoe.com",
+    "linkedin": "linkedin.com/in/johndoe"
+  },
+  "summary": "Experienced software developer with 5+ years of experience in web development and cloud technologies.",
+  "education": [
+    {
+      "degree": "Bachelor of Computer Science",
+      "school": "University of Technology",
+      "startDate": "2015-09",
+      "endDate": "2019-06",
+      "description": "Graduated with honors. Specialization in Software Engineering.",
+      "isPresent": false
+    }
+  ],
+  "experience": [
+    {
+      "title": "Senior Developer",
+      "company": "Tech Solutions Inc.",
+      "startDate": "2019-07",
+      "endDate": "",
+      "description": "Leading a team of 5 developers. Implemented CI/CD pipeline reducing deployment time by 40%.",
+      "isPresent": true
+    }
+  ],
+  "skills": [
+    "JavaScript",
+    "React",
+    "Node.js",
+    "Python",
+    "AWS",
+    "Docker",
+    "SQL",
+    "Git"
+  ],
+  "projects": [
+    {
+      "title": "E-commerce Platform",
+      "role": "Lead Developer",
+      "startDate": "2020-03",
+      "endDate": "2020-11",
+      "description": "Built a full-featured e-commerce platform with payment integration.",
+      "url": "https://github.com/johndoe/ecommerce",
+      "isPresent": false
+    }
+  ],
+  "certifications": [
+    {
+      "name": "AWS Certified Solutions Architect",
+      "issuer": "Amazon Web Services",
+      "date": "2021-05",
+      "url": "https://aws.amazon.com/certification"
+    }
+  ],
+  "languages": [
+    {
+      "language": "English",
+      "proficiency": "Native"
+    },
+    {
+      "language": "Spanish",
+      "proficiency": "Intermediate"
+    }
+  ],
+  "additionalInfo": {
+    "interests": "Machine learning, blockchain technology, hiking, photography",
+    "achievements": "Published 2 research papers on AI applications in healthcare",
+    "publications": "Smith J., Doe J. (2022). AI in Modern Healthcare. Journal of Technology in Medicine, 15(2), 45-58.",
+        "references": "{\"name\":\"John Smith\",\"position\":\"Senior Software Engineer\",\"company\":\"Tech Innovations Inc.\",\"email\":\"john.smith@example.com\",\"phone\":\"+1 (555) 123-4567\",\"relationship\":\"Direct supervisor for 3 years\",\"available\":false}\n{\"name\":\"Sarah Johnson\",\"position\":\"Project Manager\",\"company\":\"Global Solutions Ltd.\",\"email\":\"s.johnson@example.com\",\"phone\":\"+1 (555) 987-6543\",\"relationship\":\"Collaborated on multiple projects\",\"available\":true}"
+
+  },
+  "customFields": [
+    {
+      "label": "Portfolio",
+      "value": "www.johndoe-portfolio.com"
+    },
+    {
+      "label": "GitHub",
+      "value": "github.com/johndoe"
+    }
+  ]
+}
+```
+
+Backend sẽ có thể tự động lấy `userId` từ JWT token mà không cần gửi trong body request, đảm bảo an toàn và chính xác hơn.
+
+## Tóm tắt
+
+1. **JWT để xác định User**: Backend sẽ sử dụng JWT từ request header để xác định người dùng
+2. **Mỗi User có nhiều CV**: Schema MongoDB được thiết kế với userId làm reference
+3. **Cập nhật CV hiện có**: Gửi _id trong request body để cập nhật CV hiện có
+4. **Naming CV**: Thêm trường "name" để phân biệt giữa các CV của cùng một user
+
+Với thiết kế này, hệ thống của bạn có thể dễ dàng hỗ trợ nhiều CV cho mỗi user, đồng thời đảm bảo bảo mật thông qua JWT authentication.

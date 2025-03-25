@@ -1,80 +1,80 @@
 const mongoose = require('mongoose');
 
 const cvSchema = new mongoose.Schema({
-    user: {
+    userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: true,
+        index: true // For faster queries
+    },
+    name: {
+        type: String,
+        default: `CV - ${new Date().toLocaleDateString()}`,
+        trim: true
     },
     template: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Template',
-        required: true
+        ref: 'Template'
     },
-    title: {
-        type: String,
-        required: [true, 'Please add a title'],
-        trim: true
-    },
-    basicInfo: {
-        fullName: String,
+    personalInfo: {
+        firstName: String,
+        lastName: String,
         email: String,
         phone: String,
         location: String,
+        country: String,
         website: String,
         linkedin: String
     },
-    professionalSummary: {
+    summary: {
         type: String,
-        maxLength: [2000, 'Professional summary cannot be more than 2000 characters']
+        maxLength: [2000, 'Summary cannot be more than 2000 characters']
     },
-    skills: [{
-        name: String,
-        level: {
-            type: String,
-            enum: ['Beginner', 'Intermediate', 'Advanced', 'Expert']
-        },
-        category: String // Để dễ dàng lọc skills theo yêu cầu JD
+    education: [{
+        degree: String,
+        school: String,
+        startDate: String,
+        endDate: String,
+        description: String,
+        isPresent: Boolean
     }],
-    workExperience: [{
+    experience: [{
         title: String,
         company: String,
-        location: String,
-        startDate: Date,
-        endDate: Date,
-        current: {
-            type: Boolean,
-            default: false
-        },
+        startDate: String,
+        endDate: String,
         description: String,
-        achievements: [String],
-        keywords: [String] // Để dễ dàng match với JD
+        isPresent: Boolean
     }],
-    education: [{
-        school: String,
-        degree: String,
-        field: String,
-        location: String,
-        startDate: Date,
-        endDate: Date,
-        current: {
-            type: Boolean,
-            default: false
-        },
-        description: String
+    skills: [String],
+    projects: [{
+        title: String,
+        role: String,
+        startDate: String,
+        endDate: String,
+        description: String,
+        url: String,
+        isPresent: Boolean
     }],
     certifications: [{
         name: String,
         issuer: String,
-        issueDate: Date,
-        expiryDate: Date,
-        credentialID: String,
-        credentialURL: String
+        date: String,
+        url: String
     }],
-    additionalSections: [{
-        title: String,
-        content: String,
-        keywords: [String] // Để dễ dàng match với JD
+    languages: [{
+        language: String,
+        proficiency: String
+    }],
+    additionalInfo: {
+        interests: String,
+        achievements: String,
+        publications: String,
+        references: String
+    },
+    customFields: [{
+        label: String,
+        value: String
     }],
     status: {
         type: String,
