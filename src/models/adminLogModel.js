@@ -20,7 +20,7 @@ const mongoose = require('mongoose');
  *           description: ID của admin thực hiện hành động
  *         action:
  *           type: string
- *           enum: [login, create_user, update_user, delete_user, create_template, update_template, delete_template, system_config, other]
+ *           enum: [login, create_user, update_user, delete_user, create_template, update_template, delete_template, sync_templates, system_config, other]
  *           description: Loại hành động được thực hiện
  *         details:
  *           type: object
@@ -49,7 +49,7 @@ const adminLogSchema = new mongoose.Schema({
   action: {
     type: String,
     required: true,
-    enum: ['login', 'create_user', 'update_user', 'delete_user', 'create_template', 'update_template', 'delete_template', 'system_config', 'other']
+    enum: ['login', 'create_user', 'update_user', 'delete_user', 'create_template', 'update_template', 'delete_template', 'sync_templates', 'system_config', 'other']
   },
   details: {
     type: Object,

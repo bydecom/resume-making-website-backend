@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const { protect, admin, hasRole, hasPermission } = require('../middlewares/authMiddleware');
+const { protect, hasRole, hasPermission } = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
@@ -89,12 +89,12 @@ router.post('/register', userController.register);
  *                 type: string
  *                 format: email
  *                 description: User's email address
- *                 example: john@example.com
+ *                 example: admin@example1.com
  *               password:
  *                 type: string
  *                 format: password
  *                 description: User's password
- *                 example: password123
+ *                 example: admin123
  *     responses:
  *       200:
  *         description: Login successful
@@ -542,5 +542,81 @@ router.put('/:userId',
     hasPermission(['manage_users']), 
     userController.updateUser
 );
+
+/**
+ * @swagger
+ * /api/users/admin/dashboard-metrics:
+ *   get:
+ *     summary: Get user dashboard metrics for admin
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [7d, 30d, 90d, 365d]
+ *           default: 7d
+ *         description: Time period for metrics calculation
+ *     responses:
+ *       200:
+ *         description: Dashboard metrics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     summary:
+ *                       type: object
+ *                       properties:
+ *                         totalNewUsers:
+ *                           type: integer
+ *                           description: Total new users in the selected period
+ *                           example: 124
+ *                         averageNewUsersPerDay:
+ *                           type: integer
+ *                           description: Average new users per day
+ *                           example: 17
+ *                         growthRate:
+ *                           type: integer
+ *                           description: Growth rate compared to previous period
+ *                           example: 25
+ *                         activationRate:
+ *                           type: string
+ *                           description: Percentage of active users
+ *                           example: "87%"
+ *                     charts:
+ *                       type: array
+ *                       description: Daily data for chart visualization
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           date:
+ *                             type: string
+ *                             example: "T2, 15/3"
+ *                           newUsers:
+ *                             type: integer
+ *                             example: 12
+ *                           totalUsers:
+ *                             type: integer
+ *                             example: 1250
+ *                           activeUsers:
+ *                             type: integer
+ *                             example: 450
+ *       401:
+ *         description: Not authorized, token failed
+ *       403:
+ *         description: Not authorized as admin
+ *       500:
+ *         description: Server error
+ */
+router.get('/admin/dashboard-metrics', protect, hasRole(['admin']), userController.getUserDashboardMetrics.bind(userController));
 
 module.exports = router; 

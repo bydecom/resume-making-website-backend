@@ -41,8 +41,11 @@ const getAdminLogs = async (filter = {}, options = {}) => {
   const limit = parseInt(options.limit, 10) || 10;
   const skip = (page - 1) * limit;
 
+  // Default sort if not provided
+  const sortOption = options.sort || { timestamp: -1 };
+
   const logs = await AdminLog.find(filter)
-    .sort({ timestamp: -1 })
+    .sort(sortOption) // Use the sort from options
     .skip(skip)
     .limit(limit)
     .populate('adminId', 'name email');

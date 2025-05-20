@@ -1,0 +1,96 @@
+# DANH SÁCH ENDPOINT API - RESUME MAKING WEBSITE
+
+## 1. Authentication & User
+- POST   /api/users/register           : Đăng ký tài khoản
+- POST   /api/users/login              : Đăng nhập
+- PUT    /api/users/change-password    : Đổi mật khẩu
+- POST   /api/users/create-admin       : Tạo tài khoản admin
+- GET    /api/users                    : Lấy danh sách người dùng (admin)
+- GET    /api/users/me                 : Lấy thông tin cá nhân
+- GET    /api/users/:userId            : Lấy thông tin user theo ID (admin)
+- PUT    /api/users/:userId            : Cập nhật user (admin)
+- PUT    /api/users/me                 : Cập nhật profile cá nhân
+- DELETE /api/users/:userId            : Xóa user (admin)
+
+## 2. CV Management
+- POST   /api/cv                       : Tạo mới CV
+- GET    /api/cv                       : Lấy danh sách CV của user
+- GET    /api/cv/:id                   : Lấy chi tiết một CV
+- PUT    /api/cv/:id                   : Cập nhật CV
+- PATCH  /api/cv/:id/name              : Cập nhật tên CV
+- DELETE /api/cv/:id                   : Xóa CV
+
+## 3. CV Evaluation
+- POST   /api/cv/:cvId/evaluation      : Tạo/Cập nhật đánh giá thủ công cho CV
+- POST   /api/cv/:cvId/evaluation/auto : Đánh giá tự động CV bằng AI
+- GET    /api/cv/:cvId/evaluation      : Lấy đánh giá của một CV
+- POST   /api/cv/evaluate-from-data    : Đánh giá CV từ dữ liệu frontend (AI)
+
+## 4. CV + Evaluation (tích hợp)
+- GET    /api/cv/with-evaluations      : Lấy tất cả CV kèm đánh giá
+- GET    /api/cv/:id/with-evaluation   : Lấy chi tiết một CV kèm đánh giá
+
+## 5. Resume APIs
+- POST   /api/resumes                  : Tạo Resume mới
+- GET    /api/resumes                  : Lấy danh sách Resume
+- GET    /api/resumes/:id              : Lấy chi tiết Resume
+- PUT    /api/resumes/:id              : Cập nhật Resume
+- DELETE /api/resumes/:id              : Xóa Resume
+- POST   /api/resumes/match            : Tạo Resume phù hợp từ CV và JD
+
+## 6. Job Description APIs
+- POST   /api/job-descriptions         : Tạo Job Description mới
+- GET    /api/job-descriptions         : Lấy danh sách Job Description
+- GET    /api/job-descriptions/:id     : Lấy chi tiết Job Description
+- PUT    /api/job-descriptions/:id     : Cập nhật Job Description
+- DELETE /api/job-descriptions/:id     : Xóa Job Description
+
+## 7. Extract APIs
+- POST   /api/extract/cv               : Trích xuất dữ liệu CV (yêu cầu xác thực)
+- POST   /api/extract/cv/public        : Trích xuất dữ liệu CV (public)
+- POST   /api/extract/job-description  : Trích xuất dữ liệu Job Description
+
+## 8. AI Gemini Config (Admin)
+- GET    /api/admin/ai-configs         : Lấy danh sách cấu hình Gemini
+- GET    /api/admin/ai-configs/:id     : Lấy chi tiết cấu hình Gemini
+- POST   /api/admin/ai-configs         : Tạo mới cấu hình Gemini
+- PUT    /api/admin/ai-configs/:id     : Cập nhật cấu hình Gemini
+- DELETE /api/admin/ai-configs/:id     : Xóa cấu hình Gemini
+- PATCH  /api/admin/ai-configs/:id/active : Đặt cấu hình là active
+
+## 9. Admin Logs (Admin)
+- GET    /api/admin/logs               : Lấy log thao tác admin
+
+## 10. Dashboard & Statistics
+# --- Dành cho Admin ---
+- GET    /api/users/admin/dashboard-metrics      : Thống kê tổng quan người dùng (biểu đồ, số liệu growth, active, ...)
+- GET    /api/user-logs/statistics               : Thống kê tài liệu (CV, Resume) theo thời gian
+- GET    /api/user-logs/template-download-stats  : Thống kê lượt download theo template (CV & Resume)
+- GET    /api/admin/logs                         : Lấy log thao tác admin
+- GET    /api/admin/users/all-logs               : Lấy log hoạt động của tất cả user
+- GET    /api/admin/users/:userId/logs           : Lấy log hoạt động của 1 user cụ thể
+- GET    /api/admin/users/:userId/stats          : Thống kê hoạt động của 1 user cụ thể
+
+# --- Dành cho User thường ---
+- GET    /api/user-logs/current                  : Lấy log hoạt động của user hiện tại
+- GET    /api/user-logs/current/stats            : Thống kê hoạt động của user hiện tại
+
+## 11. Endpoint đặc biệt & tiện ích
+- POST   /api/cv/temp                        : Tạo CV tạm thời
+- POST   /api/extract/cv/text                : Trích xuất CV từ text (raw)
+- POST   /api/extract/preprocess             : Tiền xử lý text CV (yêu cầu xác thực)
+- POST   /api/extract/preprocess/public      : Tiền xử lý text CV (public)
+- POST   /api/extract/cv-with-preprocess     : Trích xuất & tiền xử lý CV (yêu cầu xác thực)
+- POST   /api/extract/cv-with-preprocess/public : Trích xuất & tiền xử lý CV (public)
+- POST   /api/resumes/tips                   : Gợi ý cải thiện Resume từ AI
+- GET    /api/downloads/cv/:id               : Download file CV
+- GET    /api/downloads/resume/:id           : Download file Resume
+- GET    /api/downloads/stats                : Thống kê lượt download (user)
+- GET    /api/downloads/admin/stats          : Thống kê lượt download (admin)
+
+## 12. Template Management
+- GET    /api/templates                  : Lấy tất cả templates (admin)
+- GET    /api/templates/active           : Lấy các template đang active (public)
+- GET    /api/templates/:templateId      : Lấy chi tiết template theo ID (public)
+- PUT    /api/templates/:templateId      : Cập nhật metadata của template (admin)
+- POST   /api/templates/sync             : Đồng bộ templates từ frontend (admin)

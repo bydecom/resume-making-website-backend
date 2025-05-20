@@ -1,101 +1,187 @@
 const mongoose = require('mongoose');
+const cvSnapshotSchema = require('./cvSnapshotSchema');
+const jobDescriptionSchema = require('./jobDescriptionModel');
 
 const resumeSchema = new mongoose.Schema({
-    user: {
+    userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: true,
+        index: true
     },
-    baseCV: {
+    cvId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CV',
-        required: true
+        required: true,
+        index: true
     },
-    jobDescription: {
-        title: String,
-        company: String,
-        description: String,
-        requirements: [String],
-        keywords: [String]
+    originalCV: {
+        type: cvSnapshotSchema,
+        default: null
     },
-    template: {
+    jobDescriptionId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Template',
-        required: true
+        ref: 'JobDescription',
+        required: true,
+        index: true
     },
-    title: {
+    name: {
         type: String,
-        required: [true, 'Please add a title'],
+        default: `Resume - ${new Date().toLocaleDateString()}`,
         trim: true
     },
-    basicInfo: {
-        fullName: String,
+    template: {
+        id: {
+            type: String,
+            default: 'professionalBlue'
+        },
+        name: {
+            type: String,
+            default: 'Professional Blue'
+        }
+    },
+    personalInfo: {
+        firstName: String,
+        lastName: String,
+        professionalHeadline: {
+            type: String,
+            required: true,
+            trim: true
+        },
         email: String,
         phone: String,
         location: String,
+        country: String,
         website: String,
         linkedin: String
     },
-    professionalSummary: {
+    roleApply: {
         type: String,
-        maxLength: [2000, 'Professional summary cannot be more than 2000 characters']
+        required: true,
+        trim: true
     },
-    selectedSkills: [{
-        skill: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'CV.skills'
+    summary: {
+        type: String,
+        maxLength: [2000, 'Summary cannot be more than 2000 characters']
+    },
+    education: [{
+        degree: String,
+        institution: String,
+        startDate: String,
+        endDate: String,
+        description: String,
+        isPresent: Boolean,
+        relevance: {
+            type: Number,
+            min: 0,
+            max: 100
         },
-        relevance: Number // Độ phù hợp với JD (0-100)
-    }],
-    selectedExperiences: [{
-        experience: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'CV.workExperience'
-        },
-        relevance: Number,
-        customDescription: String // Mô tả được điều chỉnh để phù hợp với JD
-    }],
-    selectedEducation: [{
-        education: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'CV.education'
+        comment: {
+            type: String,
+            description: 'AI analysis of how this education matches the job requirements'
         }
     }],
-    selectedCertifications: [{
-        certification: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'CV.certifications'
+    matchedExperience: [{
+        position: String,
+        company: String,
+        startDate: String,
+        endDate: String,
+        description: String,
+        isPresent: Boolean,
+        relevance: {
+            type: Number,
+            min: 0,
+            max: 100
+        },
+        comment: {
+            type: String,
+            description: 'AI analysis of how this experience matches the job requirements'
         }
     }],
-    customSections: [{
+    matchedSkills: [{
+        skill: String,
+        relevance: {
+            type: Number,
+            min: 0,
+            max: 100
+        },
+        comment: {
+            type: String,
+            description: 'AI analysis of how this skill matches the job requirements'
+        }
+    }],
+    matchedProjects: [{
         title: String,
-        content: String,
-        relevance: Number
+        role: String,
+        startDate: String,
+        endDate: String,
+        description: String,
+        url: String,
+        isPresent: Boolean,
+        relevance: {
+            type: Number,
+            min: 0,
+            max: 100
+        },
+        comment: {
+            type: String,
+            description: 'AI analysis of how this project matches the job requirements'
+        }
+    }],
+    matchedCertifications: [{
+        name: String,
+        issuer: String,
+        date: String,
+        url: String,
+        relevance: {
+            type: Number,
+            min: 0,
+            max: 100
+        },
+        comment: {
+            type: String,
+            description: 'AI analysis of how this certification matches the job requirements'
+        }
+    }],
+    matchedLanguages: [{
+        language: String,
+        proficiency: String,
+        relevance: {
+            type: Number,
+            min: 0,
+            max: 100
+        },
+        comment: {
+            type: String,
+            description: 'AI analysis of how this language skill matches the job requirements'
+        }
+    }],
+    additionalInfo: {
+        interests: String,
+        achievements: String,
+        publications: String,
+        references: String
+    },
+    customFields: [{
+        label: String,
+        value: String
     }],
     status: {
         type: String,
         enum: ['draft', 'published'],
         default: 'draft'
     },
-    matchScore: {
-        type: Number,
-        default: 0 // Điểm số phù hợp với JD (0-100)
+    isDefault: {
+        type: Boolean,
+        default: false
     },
-    customization: {
-        colors: {
-            primary: String,
-            secondary: String,
-            text: String
-        },
-        fonts: {
-            heading: String,
-            body: String
-        },
-        spacing: {
-            type: String,
-            enum: ['compact', 'normal', 'spacious'],
-            default: 'normal'
-        }
+    is_deleted: {
+        type: Boolean,
+        default: false
+    },
+    deleted_at: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true

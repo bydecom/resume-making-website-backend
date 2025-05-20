@@ -81,6 +81,14 @@ const userSchema = new mongoose.Schema({
     permissions: {
         type: [String],
         default: []
+    },
+    is_deleted: {
+        type: Boolean,
+        default: false
+    },
+    deleted_at: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true

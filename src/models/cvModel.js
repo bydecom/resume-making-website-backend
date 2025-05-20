@@ -13,12 +13,19 @@ const cvSchema = new mongoose.Schema({
         trim: true
     },
     template: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Template'
+        id: {
+            type: String,
+            default: 'professionalBlue' // Template mặc định
+        },
+        name: {
+            type: String,
+            default: 'Professional Blue'
+        }
     },
     personalInfo: {
         firstName: String,
         lastName: String,
+        professionalHeadline: String,
         email: String,
         phone: String,
         location: String,
@@ -32,14 +39,14 @@ const cvSchema = new mongoose.Schema({
     },
     education: [{
         degree: String,
-        school: String,
+        institution: String,
         startDate: String,
         endDate: String,
         description: String,
         isPresent: Boolean
     }],
     experience: [{
-        title: String,
+        position: String,
         company: String,
         startDate: String,
         endDate: String,
@@ -84,6 +91,14 @@ const cvSchema = new mongoose.Schema({
     isDefault: {
         type: Boolean,
         default: false
+    },
+    is_deleted: {
+        type: Boolean,
+        default: false
+    },
+    deleted_at: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true

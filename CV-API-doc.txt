@@ -277,15 +277,60 @@ Tất cả các API liên quan đến CV đều yêu cầu xác thực bằng JW
 }
 ```
 
-## 3. Các mã lỗi
+## 3. Trích xuất dữ liệu CV từ văn bản
+
+### 3.1. Trích xuất dữ liệu CV (yêu cầu xác thực)
+
+- **Endpoint**: POST /api/extract/cv
+- **Access**: Private (yêu cầu token)
+- **Request Body**:
+```json
+{
+  "text": "John Doe\nSenior Software Engineer\nEmail: john.doe@example.com\nPhone: +1 555-123-4567\n\nSummary:\nExperienced software engineer with 8+ years of expertise in full-stack development..."
+}
+```
+- **Success Response** (200):
+```json
+{
+  "status": "success",
+  "data": {
+    "personalInfo": {
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john.doe@example.com",
+      "phone": "+1 555-123-4567",
+      "location": "San Francisco",
+      "country": "USA"
+    },
+    "summary": "Experienced software engineer with 8+ years of expertise in full-stack development...",
+    "education": [...],
+    "experience": [...],
+    "skills": [...],
+    "projects": [...],
+    "certifications": [...],
+    "languages": [...],
+    "additionalInfo": {...}
+  },
+  "message": "CV data extracted successfully"
+}
+```
+
+### 3.2. Trích xuất dữ liệu CV (endpoint công khai)
+
+- **Endpoint**: POST /api/extract/cv/public
+- **Access**: Public (không yêu cầu token)
+- **Request Body**: Giống như endpoint yêu cầu xác thực
+- **Success Response** (200): Giống như endpoint yêu cầu xác thực
+
+## 4. Các mã lỗi
 
 - 400: Bad Request (INVALID_ID, VALIDATION_ERROR)
 - 401: Authentication error (NO_TOKEN, INVALID_TOKEN)
 - 403: Authorization error (NOT_AUTHORIZED)
 - 404: Resource not found (CV_NOT_FOUND)
-- 500: Server error (SERVER_ERROR)
+- 500: Server error (SERVER_ERROR, AI_PROCESSING_ERROR, CONFIG_ERROR)
 
-## 4. Lưu ý
+## 5. Lưu ý
 
 1. Khi tạo CV, nếu không cung cấp tên, hệ thống sẽ tự tạo tên mặc định dạng "CV - [ngày hiện tại]"
 2. Trường `isPresent` trong education, experience và projects xác định xem đang diễn ra hay đã kết thúc
@@ -293,4 +338,165 @@ Tất cả các API liên quan đến CV đều yêu cầu xác thực bằng JW
 4. Mỗi user có thể có nhiều CV, nhưng chỉ được truy cập, cập nhật hoặc xóa CV do chính họ tạo ra
 5. CV có hai trạng thái: "draft" (nháp) và "published" (đã xuất bản)
 6. Có thể đánh dấu một CV là mặc định (isDefault = true) để hiển thị nổi bật trong ứng dụng
-7. Để chỉ cập nhật tên CV, sử dụng endpoint PATCH /api/cv/:id/name thay vì cập nhật toàn bộ CV 
+7. Để chỉ cập nhật tên CV, sử dụng endpoint PATCH /api/cv/:id/name thay vì cập nhật toàn bộ CV
+8. API trích xuất CV sử dụng Google Gemini AI để phân tích và trích xuất thông tin từ văn bản
+9. Định dạng ngày tháng nên sử dụng YYYY-MM (ví dụ: 2020-05) để tránh lỗi khi xử lý 
+
+## 6. Quản lý cấu hình AI Gemini (Admin Only)
+
+Các API này chỉ dành cho admin để quản lý cấu hình Gemini AI (GeminiApiConfig). Tất cả các endpoint đều yêu cầu xác thực admin (JWT + role admin).
+
+### 6.1. Lấy danh sách cấu hình Gemini
+- **Endpoint**: GET /api/admin/ai-configs
+- **Access**: Admin
+- **Success Response** (200):
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "config_id_1",
+      "name": "Chat mặc định",
+      "description": "Cấu hình chat Gemini mặc định",
+      "apiKey": "...",
+      "modelName": "gemini-1.5-flash-latest",
+      "systemInstruction": "You are a helpful assistant.",
+      "generationConfig": { "temperature": 0.9, "topP": 1, "topK": 1, "maxOutputTokens": 2048, "stopSequences": [] },
+      "safetySettings": [ { "category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE" } ],
+      "isActive": true,
+      "createdAt": "2024-06-01T12:00:00.000Z",
+      "updatedAt": "2024-06-01T12:00:00.000Z"
+    },
+    { /* ... */ }
+  ]
+}
+```
+
+### 6.2. Lấy chi tiết một cấu hình Gemini
+- **Endpoint**: GET /api/admin/ai-configs/:id
+- **Access**: Admin
+- **Parameters**:
+  - `id`: ID của cấu hình
+- **Success Response** (200):
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "config_id_1",
+    "name": "Chat mặc định",
+    "description": "Cấu hình chat Gemini mặc định",
+    "apiKey": "...",
+    "modelName": "gemini-1.5-flash-latest",
+    "systemInstruction": "You are a helpful assistant.",
+    "generationConfig": { "temperature": 0.9, "topP": 1, "topK": 1, "maxOutputTokens": 2048, "stopSequences": [] },
+    "safetySettings": [ { "category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE" } ],
+    "isActive": true,
+    "createdAt": "2024-06-01T12:00:00.000Z",
+    "updatedAt": "2024-06-01T12:00:00.000Z"
+  }
+}
+```
+
+### 6.3. Tạo mới cấu hình Gemini
+- **Endpoint**: POST /api/admin/ai-configs
+- **Access**: Admin
+- **Request Body**:
+```json
+{
+  "name": "Chat mặc định",
+  "description": "Cấu hình chat Gemini mặc định",
+  "apiKey": "GOOGLE_API_KEY",
+  "modelName": "gemini-1.5-flash-latest",
+  "systemInstruction": "You are a helpful assistant.",
+  "generationConfig": { "temperature": 0.9, "topP": 1, "topK": 1, "maxOutputTokens": 2048, "stopSequences": [] },
+  "safetySettings": [ { "category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE" } ],
+  "isActive": false
+}
+```
+- **Success Response** (201):
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "config_id_1",
+    "name": "Chat mặc định",
+    "description": "Cấu hình chat Gemini mặc định",
+    "apiKey": "GOOGLE_API_KEY",
+    "modelName": "gemini-1.5-flash-latest",
+    "systemInstruction": "You are a helpful assistant.",
+    "generationConfig": { "temperature": 0.9, "topP": 1, "topK": 1, "maxOutputTokens": 2048, "stopSequences": [] },
+    "safetySettings": [ { "category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE" } ],
+    "isActive": false,
+    "createdAt": "2024-06-01T12:00:00.000Z",
+    "updatedAt": "2024-06-01T12:00:00.000Z"
+  }
+}
+```
+
+### 6.4. Cập nhật cấu hình Gemini
+- **Endpoint**: PUT /api/admin/ai-configs/:id
+- **Access**: Admin
+- **Parameters**:
+  - `id`: ID của cấu hình
+- **Request Body**: Các trường cần cập nhật (giống khi tạo mới)
+- **Success Response** (200):
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "config_id_1",
+    "name": "Chat mặc định (updated)",
+    "description": "Cấu hình chat Gemini updated",
+    "apiKey": "GOOGLE_API_KEY",
+    "modelName": "gemini-1.5-flash-latest",
+    "systemInstruction": "You are a helpful assistant.",
+    "generationConfig": { "temperature": 1, "topP": 0.95, "topK": 40, "maxOutputTokens": 4096, "stopSequences": [] },
+    "safetySettings": [ { "category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE" } ],
+    "isActive": false,
+    "createdAt": "2024-06-01T12:00:00.000Z",
+    "updatedAt": "2024-06-02T10:00:00.000Z"
+  }
+}
+```
+
+### 6.5. Xóa cấu hình Gemini
+- **Endpoint**: DELETE /api/admin/ai-configs/:id
+- **Access**: Admin
+- **Parameters**:
+  - `id`: ID của cấu hình
+- **Success Response** (200):
+```json
+{
+  "success": true,
+  "message": "Config deleted"
+}
+```
+
+### 6.6. Đặt cấu hình là active (chỉ 1 cấu hình active)
+- **Endpoint**: PATCH /api/admin/ai-configs/:id/active
+- **Access**: Admin
+- **Parameters**:
+  - `id`: ID của cấu hình
+- **Success Response** (200):
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "config_id_1",
+    "isActive": true,
+    // ... các trường khác ...
+  }
+}
+```
+
+### 6.7. Lưu ý bảo mật
+- Trường `apiKey` là thông tin nhạy cảm, chỉ trả về cho admin. Không nên trả về cho user thường hoặc frontend public.
+- Khi set một cấu hình là active, các cấu hình khác sẽ tự động bị unset (isActive=false).
+- Tên cấu hình (`name`) phải là duy nhất.
+
+### 6.8. Các mã lỗi
+- 400: Bad Request (trùng tên, thiếu trường bắt buộc)
+- 401: Authentication error (NO_TOKEN, INVALID_TOKEN)
+- 403: Authorization error (NOT_AUTHORIZED, NOT_ADMIN)
+- 404: Config not found
+- 500: Server error (SERVER_ERROR) 

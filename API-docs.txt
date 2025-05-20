@@ -1,0 +1,523 @@
+Tôi sẽ tạo một tài liệu API đầy đủ dựa trên các endpoints mà tôi thấy trong code của bạn:
+
+# TÀI LIỆU API - RESUME MAKER WEBSITE
+
+## Thông tin chung
+- Base URL: `/api`
+- Xác thực: Hầu hết các API đều yêu cầu token JWT trong header `Authorization` với format `Bearer <token>`
+- Format dữ liệu: JSON
+
+## Danh sách API
+
+### Authentication & Users
+
+#### Đăng ký tài khoản
+- **URL**: `/users/register`
+- **Method**: POST
+- **Quyền**: Public
+- **Thông số body**:
+  ```json
+  {
+    "name": "Tên người dùng",
+    "email": "email@example.com",
+    "password": "mật khẩu"
+  }
+  ```
+- **Response**: Thông tin người dùng kèm token
+
+#### Đăng nhập
+- **URL**: `/users/login`
+- **Method**: POST
+- **Quyền**: Public
+- **Thông số body**:
+  ```json
+  {
+    "email": "email@example.com",
+    "password": "mật khẩu"
+  }
+  ```
+- **Response**: Thông tin người dùng kèm token
+
+#### Đổi mật khẩu
+- **URL**: `/users/change-password`
+- **Method**: PUT
+- **Quyền**: Private
+- **Thông số body**:
+  ```json
+  {
+    "currentPassword": "mật khẩu hiện tại",
+    "newPassword": "mật khẩu mới"
+  }
+  ```
+- **Response**: Token mới
+
+#### Tạo tài khoản Admin
+- **URL**: `/users/create-admin`
+- **Method**: POST
+- **Quyền**: Public với adminSecret
+- **Thông số body**:
+  ```json
+  {
+    "name": "Tên admin",
+    "email": "admin@example.com",
+    "password": "mật khẩu",
+    "adminSecret": "mã bí mật admin"
+  }
+  ```
+- **Response**: Thông tin admin kèm token
+
+#### Lấy danh sách người dùng
+- **URL**: `/users`
+- **Method**: GET
+- **Quyền**: Admin
+- **Response**: Danh sách tất cả người dùng
+
+#### Lấy thông tin cá nhân
+- **URL**: `/users/me`
+- **Method**: GET
+- **Quyền**: Private
+- **Response**: Thông tin người dùng đăng nhập
+
+#### Lấy thông tin người dùng theo ID
+- **URL**: `/users/:id`
+- **Method**: GET
+- **Quyền**: Admin
+- **Response**: Thông tin người dùng
+
+#### Xóa người dùng
+- **URL**: `/users/:userId`
+- **Method**: DELETE
+- **Quyền**: Admin
+- **Response**: Thông báo thành công
+
+#### Cập nhật thông tin cá nhân
+- **URL**: `/users/me`
+- **Method**: PUT
+- **Quyền**: Private
+- **Thông số body**:
+  ```json
+  {
+    "name": "Tên mới",
+    "email": "email-moi@example.com",
+    "currentPassword": "mật khẩu hiện tại"
+  }
+  ```
+- **Response**: Thông tin người dùng đã cập nhật
+
+#### Cập nhật thông tin người dùng (Admin)
+- **URL**: `/users/:userId`
+- **Method**: PUT
+- **Quyền**: Admin
+- **Thông số body**:
+  ```json
+  {
+    "name": "Tên mới",
+    "email": "email-moi@example.com",
+    "isActive": true
+  }
+  ```
+- **Response**: Thông tin người dùng đã cập nhật
+
+#### Lấy thống kê Dashboard (Admin)
+- **URL**: `/users/admin/dashboard-metrics`
+- **Method**: GET
+- **Quyền**: Admin
+- **Query params**: `period` (7d, 30d, 90d, 365d)
+- **Response**: Số liệu thống kê người dùng
+
+### CV
+
+#### Tạo CV mới
+- **URL**: `/cv`
+- **Method**: POST
+- **Quyền**: Private
+- **Thông số body**: Dữ liệu CV (các trường như name, personalInfo, education, experience, v.v.)
+- **Response**: Thông tin CV đã tạo
+
+#### Tạo CV tạm thời
+- **URL**: `/cv/temp`
+- **Method**: POST
+- **Quyền**: Private
+- **Thông số body**: Dữ liệu CV
+- **Response**: Thông tin CV tạm thời
+
+#### Cập nhật CV
+- **URL**: `/cv/:id`
+- **Method**: PUT
+- **Quyền**: Private
+- **Thông số body**: Dữ liệu CV cần cập nhật
+- **Response**: Thông tin CV đã cập nhật
+
+#### Cập nhật tên CV
+- **URL**: `/cv/:id/name`
+- **Method**: PATCH
+- **Quyền**: Private
+- **Thông số body**: `{ "name": "Tên CV mới" }`
+- **Response**: Thông tin CV đã cập nhật
+
+#### Lấy danh sách CV của người dùng
+- **URL**: `/cv`
+- **Method**: GET
+- **Quyền**: Private
+- **Response**: Danh sách CV của người dùng
+
+#### Lấy thông tin CV theo ID
+- **URL**: `/cv/:id`
+- **Method**: GET
+- **Quyền**: Private
+- **Response**: Thông tin chi tiết CV
+
+#### Xóa CV
+- **URL**: `/cv/:id`
+- **Method**: DELETE
+- **Quyền**: Private
+- **Response**: Thông báo thành công
+
+#### Lấy danh sách CV kèm đánh giá
+- **URL**: `/cv/with-evaluations`
+- **Method**: GET
+- **Quyền**: Private
+- **Response**: Danh sách CV kèm đánh giá
+
+#### Lấy CV kèm đánh giá
+- **URL**: `/cv/:id/with-evaluation`
+- **Method**: GET
+- **Quyền**: Private
+- **Response**: Thông tin CV kèm đánh giá
+
+### Đánh giá CV
+
+#### Tạo đánh giá CV
+- **URL**: `/cv/:cvId/evaluation`
+- **Method**: POST
+- **Quyền**: Private
+- **Thông số body**: Dữ liệu đánh giá
+- **Response**: Thông tin đánh giá đã tạo
+
+#### Tạo đánh giá tự động
+- **URL**: `/cv/:cvId/evaluation/auto`
+- **Method**: POST
+- **Quyền**: Private
+- **Response**: Thông tin đánh giá tự động
+
+#### Đánh giá CV từ dữ liệu frontend
+- **URL**: `/cv/evaluate-from-data`
+- **Method**: POST
+- **Quyền**: Private
+- **Thông số body**: Dữ liệu CV cần đánh giá
+- **Response**: Kết quả đánh giá
+
+#### Lấy đánh giá CV
+- **URL**: `/cv/:cvId/evaluation`
+- **Method**: GET
+- **Quyền**: Private
+- **Response**: Thông tin đánh giá CV
+
+### Resume
+
+#### Tạo Resume mới
+- **URL**: `/resumes`
+- **Method**: POST
+- **Quyền**: Private
+- **Thông số body**: Dữ liệu Resume
+- **Response**: Thông tin Resume đã tạo
+
+#### Lấy danh sách Resume của người dùng
+- **URL**: `/resumes`
+- **Method**: GET
+- **Quyền**: Private
+- **Response**: Danh sách Resume của người dùng
+
+#### Lấy thông tin Resume theo ID
+- **URL**: `/resumes/:id`
+- **Method**: GET
+- **Quyền**: Private
+- **Response**: Thông tin chi tiết Resume
+
+#### Cập nhật Resume
+- **URL**: `/resumes/:id`
+- **Method**: PUT
+- **Quyền**: Private
+- **Thông số body**: Dữ liệu Resume cần cập nhật
+- **Response**: Thông tin Resume đã cập nhật
+
+#### Xóa Resume
+- **URL**: `/resumes/:id`
+- **Method**: DELETE
+- **Quyền**: Private
+- **Response**: Thông báo thành công
+
+#### Tạo Resume từ CV và Job Description
+- **URL**: `/resumes/match`
+- **Method**: POST
+- **Quyền**: Private
+- **Thông số body**:
+  ```json
+  {
+    "cvId": "ID của CV",
+    "jobDescriptionId": "ID của Job Description"
+  }
+  ```
+- **Response**: Resume đã được tạo
+
+#### Lấy gợi ý cho Resume
+- **URL**: `/resumes/tips`
+- **Method**: POST
+- **Quyền**: Private
+- **Thông số body**:
+  ```json
+  {
+    "cvId": "ID của CV",
+    "jobDescriptionId": "ID của Job Description"
+  }
+  ```
+- **Response**: Các gợi ý cho từng phần của Resume
+
+### Job Description
+
+#### Tạo Job Description mới
+- **URL**: `/job-descriptions`
+- **Method**: POST
+- **Quyền**: Private
+- **Thông số body**: Dữ liệu Job Description
+- **Response**: Thông tin Job Description đã tạo
+
+#### Lấy danh sách Job Description của người dùng
+- **URL**: `/job-descriptions`
+- **Method**: GET
+- **Quyền**: Private
+- **Response**: Danh sách Job Description của người dùng
+
+#### Lấy thông tin Job Description theo ID
+- **URL**: `/job-descriptions/:id`
+- **Method**: GET
+- **Quyền**: Private
+- **Response**: Thông tin chi tiết Job Description
+
+#### Cập nhật Job Description
+- **URL**: `/job-descriptions/:id`
+- **Method**: PUT
+- **Quyền**: Private
+- **Thông số body**: Dữ liệu Job Description cần cập nhật
+- **Response**: Thông tin Job Description đã cập nhật
+
+#### Xóa Job Description
+- **URL**: `/job-descriptions/:id`
+- **Method**: DELETE
+- **Quyền**: Private
+- **Response**: Thông báo thành công
+
+### Extract
+
+#### Trích xuất CV từ văn bản
+- **URL**: `/extract/cv`
+- **Method**: POST
+- **Quyền**: Private
+- **Thông số body**: `{ "text": "Nội dung CV dạng văn bản" }`
+- **Response**: Dữ liệu CV được trích xuất
+
+#### Trích xuất Job Description từ văn bản
+- **URL**: `/extract/job-description`
+- **Method**: POST
+- **Quyền**: Private
+- **Thông số body**: `{ "text": "Nội dung Job Description dạng văn bản" }`
+- **Response**: Dữ liệu Job Description được trích xuất
+
+### Download
+
+#### Tải xuống CV
+- **URL**: `/downloads/cv/:id`
+- **Method**: GET
+- **Quyền**: Private
+- **Query params**:
+  - `format`: pdf, docx (mặc định: pdf)
+  - `templateId`: ID template
+  - `templateName`: Tên template
+- **Response**: File CV hoặc thông báo thành công
+
+#### Tải xuống Resume
+- **URL**: `/downloads/resume/:id`
+- **Method**: GET
+- **Quyền**: Private
+- **Query params**:
+  - `format`: pdf, docx (mặc định: pdf)
+  - `templateId`: ID template
+  - `templateName`: Tên template
+- **Response**: File Resume hoặc thông báo thành công
+
+#### Lấy thống kê tải xuống
+- **URL**: `/downloads/stats`
+- **Method**: GET
+- **Quyền**: Private
+- **Response**: Thống kê tải xuống của người dùng
+
+#### Lấy thống kê tải xuống (Admin)
+- **URL**: `/admin/downloads/stats`
+- **Method**: GET
+- **Quyền**: Admin
+- **Response**: Thống kê tải xuống toàn hệ thống
+
+### Admin Logs
+
+#### Lấy logs của admin
+- **URL**: `/admin/logs`
+- **Method**: GET
+- **Quyền**: Admin
+- **Query params**: 
+  - `adminId`: ID admin (tùy chọn)
+  - `action`: Loại hành động (tùy chọn)
+  - `startDate`, `endDate`: Khoảng thời gian (tùy chọn)
+  - `page`, `limit`: Phân trang
+- **Response**: Danh sách logs
+
+#### Lấy logs của người dùng cụ thể (Admin)
+- **URL**: `/admin/users/:userId/logs`
+- **Method**: GET
+- **Quyền**: Admin
+- **Query params**: 
+  - `action`: Loại hành động (tùy chọn)
+  - `entityType`: Loại entity (tùy chọn)
+  - `startDate`, `endDate`: Khoảng thời gian (tùy chọn)
+  - `page`, `limit`: Phân trang
+- **Response**: Danh sách logs của người dùng
+
+#### Lấy thống kê hoạt động của người dùng cụ thể (Admin)
+- **URL**: `/admin/users/:userId/stats`
+- **Method**: GET
+- **Quyền**: Admin
+- **Query params**: 
+  - `startDate`, `endDate`: Khoảng thời gian (tùy chọn)
+- **Response**: Thống kê hoạt động của người dùng
+
+#### Lấy tất cả logs hoạt động của người dùng (Admin)
+- **URL**: `/admin/users/all-logs`
+- **Method**: GET
+- **Quyền**: Admin
+- **Query params**:
+  - `userId`: ID người dùng (tùy chọn)
+  - `action`: Loại hành động (tùy chọn)
+  - `entityType`: Loại entity (tùy chọn)
+  - `startDate`, `endDate`: Khoảng thời gian (tùy chọn)
+  - `page`, `limit`: Phân trang
+- **Response**: Danh sách logs của tất cả người dùng
+
+### User Logs
+
+#### Lấy logs hoạt động của người dùng hiện tại
+- **URL**: `/user-logs/current`
+- **Method**: GET
+- **Quyền**: Private
+- **Query params**: 
+  - `action`: Loại hành động (tùy chọn)
+  - `entityType`: Loại entity (tùy chọn)
+  - `startDate`, `endDate`: Khoảng thời gian (tùy chọn)
+  - `page`, `limit`: Phân trang
+- **Response**: Danh sách logs hoạt động
+
+#### Lấy thống kê hoạt động của người dùng hiện tại
+- **URL**: `/user-logs/current/stats`
+- **Method**: GET
+- **Quyền**: Private
+- **Query params**: 
+  - `startDate`, `endDate`: Khoảng thời gian (tùy chọn)
+- **Response**: Thống kê hoạt động
+
+#### Lấy thống kê CV và Resume
+- **URL**: `/user-logs/statistics`
+- **Method**: GET
+- **Quyền**: Admin
+- **Query params**:
+  - `startDate`, `endDate`: Khoảng thời gian (YYYY-MM-DD) (tùy chọn)
+  - `period`: Lọc nhanh theo khoảng thời gian (7d, 30d, 90d, 365d, all) (tùy chọn)
+- **Response**: 
+  ```json
+  {
+    "status": "success",
+    "data": {
+      "cv": {
+        "totalCreated": 100,
+        "activeCount": 85,
+        "totalDownloads": 250
+      },
+      "resume": {
+        "totalCreated": 65,
+        "activeCount": 50,
+        "totalDownloads": 120
+      },
+      "timeBasedStats": {
+        "creationByMonth": [
+          {
+            "month": "2023-01",
+            "cvCount": 20,
+            "resumeCount": 15
+          },
+          {
+            "month": "2023-02",
+            "cvCount": 25,
+            "resumeCount": 18
+          }
+        ],
+        "downloadsByMonth": [
+          {
+            "month": "2023-01",
+            "cvDownloads": 45,
+            "resumeDownloads": 30
+          },
+          {
+            "month": "2023-02",
+            "cvDownloads": 60,
+            "resumeDownloads": 25
+          }
+        ]
+      }
+    },
+    "message": "Thống kê CV và Resume lấy thành công"
+  }
+  ```
+
+#### Thống kê lượt download CV/Resume theo template
+- **URL**: `/user-logs/template-download-stats`
+- **Method**: GET
+- **Quyền**: Admin
+- **Query params**:
+  - `startDate`, `endDate`: Khoảng thời gian (YYYY-MM-DD) (tùy chọn)
+  - `period`: Lọc nhanh theo khoảng thời gian (7d, 30d, 90d, 365d, all) (tùy chọn)
+- **Response**:
+  ```json
+  [
+    {
+      "templateId": "default",
+      "templateName": "Default Template",
+      "cvDownloads": 45,
+      "resumeDownloads": 30,
+      "totalDownloads": 75
+    },
+    {
+      "templateId": "template-xyz",
+      "templateName": "Modern Blue",
+      "cvDownloads": 12,
+      "resumeDownloads": 8,
+      "totalDownloads": 20
+    }
+  ]
+  ```
+
+## Mã lỗi
+
+- `200`: Thành công
+- `201`: Tạo mới thành công
+- `400`: Lỗi yêu cầu (dữ liệu không hợp lệ)
+- `401`: Không có quyền truy cập (chưa đăng nhập)
+- `403`: Không đủ quyền 
+- `404`: Không tìm thấy
+- `500`: Lỗi server
+
+## Lưu ý
+
+- Tất cả các endpoint yêu cầu xác thực đều cần gửi token JWT trong header `Authorization` với format `Bearer <token>`
+- Nhiều API trả về kết quả phân trang, trong trường hợp đó cần sử dụng query params `page` và `limit` để điều chỉnh
+- Các action trong User Logs: `login`, `logout`, `register`, `create_cv`, `update_cv`, `delete_cv`, `create_resume`, `update_resume`, `delete_resume`, `create_job_description`, `update_job_description`, `delete_job_description`, `update_profile`, `change_password`, `download_cv`, `download_resume`, `extract_cv_from_text`, `extract_job_description_from_text`, `extract_resume_from_cv_jd`, `extract_resume_tips`
+
+---
+
+Tài liệu này liệt kê các API có trong hệ thống. Để biết thêm chi tiết và cách sử dụng, vui lòng truy cập `/api-docs` để xem Swagger UI.

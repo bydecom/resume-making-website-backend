@@ -2,11 +2,14 @@ const express = require('express');
 const { protect } = require('../middlewares/authMiddleware');
 const {
   createCV,
+  createTempCV,
   updateCV,
   updateCVName,
   getUserCVs,
   getCVById,
-  deleteCV
+  deleteCV,
+  getUserCVsWithEvaluations,
+  getCVWithEvaluation
 } = require('../controllers/cvController');
 
 const router = express.Router();
@@ -29,6 +32,17 @@ const router = express.Router();
  *               name:
  *                 type: string
  *                 example: "My Professional CV"
+ *               template:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                     example: "professionalBlue"
+ *                     default: "professionalBlue"
+ *                   name:
+ *                     type: string
+ *                     example: "Professional Blue"
+ *                     default: "Professional Blue"
  *               personalInfo:
  *                 type: object
  *                 properties:
@@ -114,6 +128,22 @@ const router = express.Router();
  *                 message:
  *                   type: string
  *                   example: CV created successfully
+ *       400:
+ *         description: User already has a CV
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 code:
+ *                   type: string
+ *                   example: CV_LIMIT_EXCEEDED
+ *                 message:
+ *                   type: string
+ *                   example: User can only have one CV. Please update your existing CV instead.
  *       401:
  *         description: Not authorized, no token
  *       500:
@@ -123,28 +153,52 @@ router.post('/', protect, createCV);
 
 /**
  * @swagger
- * /api/cv:
- *   get:
- *     summary: Get all CVs for the logged-in user
+ * /api/cv/temp:
+ *   post:
+ *     summary: Create a temporary CV
  *     tags: [CV]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *         description: Page number
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Number of items per page
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CV'
+ *     responses:
+ *       201:
+ *         description: Temporary CV created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   $ref: '#/components/schemas/CV'
+ *                 message:
+ *                   type: string
+ *                   example: Temporary CV created successfully
+ *       401:
+ *         description: Not authorized, no token
+ *       500:
+ *         description: Server error
+ */
+router.post('/temp', protect, createTempCV);
+
+/**
+ * @swagger
+ * /api/cv:
+ *   get:
+ *     summary: Get the user's CV with evaluation data
+ *     tags: [CV]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: List of CVs retrieved successfully
+ *         description: User's CV with evaluation retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -166,20 +220,52 @@ router.post('/', protect, createCV);
  *                         type: string
  *                       updatedAt:
  *                         type: string
- *                 pagination:
- *                   type: object
- *                   properties:
- *                     page:
- *                       type: integer
- *                     limit:
- *                       type: integer
- *                     total:
- *                       type: integer
- *                     pages:
- *                       type: integer
+ *                       status:
+ *                         type: string
+ *                       isDefault:
+ *                         type: boolean
+ *                       template:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             example: "professionalBlue"
+ *                           name:
+ *                             type: string
+ *                             example: "Professional Blue"
+ *                       evaluation:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                           cv:
+ *                             type: string
+ *                           score:
+ *                             type: number
+ *                             example: 75
+ *                           progress:
+ *                             type: number
+ *                             example: 80
+ *                           strengths:
+ *                             type: array
+ *                             items:
+ *                               type: string
+ *                           improvements:
+ *                             type: array
+ *                             items:
+ *                               type: string
+ *                           isAutoGenerated:
+ *                             type: boolean
+ *                           evaluationDate:
+ *                             type: string
+ *                           createdAt:
+ *                             type: string
+ *                           updatedAt:
+ *                             type: string
+ *                         nullable: true
  *                 message:
  *                   type: string
- *                   example: CVs retrieved successfully
+ *                   example: CV retrieved successfully
  *       401:
  *         description: Not authorized, no token
  *       500:
@@ -191,7 +277,7 @@ router.get('/', protect, getUserCVs);
  * @swagger
  * /api/cv/{id}:
  *   get:
- *     summary: Get a CV by ID
+ *     summary: Get a CV by ID with evaluation data
  *     tags: [CV]
  *     security:
  *       - bearerAuth: []
@@ -204,7 +290,7 @@ router.get('/', protect, getUserCVs);
  *         description: CV ID
  *     responses:
  *       200:
- *         description: CV retrieved successfully
+ *         description: CV with evaluation retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -215,6 +301,78 @@ router.get('/', protect, getUserCVs);
  *                   example: success
  *                 data:
  *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     personalInfo:
+ *                       type: object
+ *                     summary:
+ *                       type: string
+ *                     education:
+ *                       type: array
+ *                     experience:
+ *                       type: array
+ *                     skills:
+ *                       type: array
+ *                     projects:
+ *                       type: array
+ *                     certifications:
+ *                       type: array
+ *                     languages:
+ *                       type: array
+ *                     additionalInfo:
+ *                       type: object
+ *                     customFields:
+ *                       type: array
+ *                     status:
+ *                       type: string
+ *                     isDefault:
+ *                       type: boolean
+ *                     template:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                           example: "professionalBlue"
+ *                         name:
+ *                           type: string
+ *                           example: "Professional Blue"
+ *                     createdAt:
+ *                       type: string
+ *                     updatedAt:
+ *                       type: string
+ *                     evaluation:
+ *                       type: object
+ *                       properties:
+ *                         _id:
+ *                           type: string
+ *                         cv:
+ *                           type: string
+ *                         score:
+ *                           type: number
+ *                           example: 75
+ *                         progress:
+ *                           type: number
+ *                           example: 80
+ *                         strengths:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                         improvements:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                         isAutoGenerated:
+ *                           type: boolean
+ *                         evaluationDate:
+ *                           type: string
+ *                         createdAt:
+ *                           type: string
+ *                         updatedAt:
+ *                           type: string
+ *                       nullable: true
  *                 message:
  *                   type: string
  *                   example: CV retrieved successfully
@@ -375,5 +533,129 @@ router.patch('/:id/name', protect, updateCVName);
  *         description: Server error
  */
 router.delete('/:id', protect, deleteCV);
+
+/**
+ * @swagger
+ * /api/cv/with-evaluations:
+ *   get:
+ *     summary: Get the user's CV with evaluation data
+ *     tags: [CV]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User's CV with evaluation retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       personalInfo:
+ *                         type: object
+ *                       summary:
+ *                         type: string
+ *                       education:
+ *                         type: array
+ *                       experience:
+ *                         type: array
+ *                       skills:
+ *                         type: array
+ *                       evaluation:
+ *                         type: object
+ *                         properties:
+ *                           score:
+ *                             type: number
+ *                           progress:
+ *                             type: number
+ *                           strengths:
+ *                             type: array
+ *                           improvements:
+ *                             type: array
+ *                 message:
+ *                   type: string
+ *                   example: CV with evaluation retrieved successfully
+ *       401:
+ *         description: Not authorized, no token
+ *       500:
+ *         description: Server error
+ */
+router.get('/with-evaluations', protect, getUserCVsWithEvaluations);
+
+/**
+ * @swagger
+ * /api/cv/{id}/with-evaluation:
+ *   get:
+ *     summary: Get a CV with its evaluation
+ *     tags: [CV]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the CV
+ *     responses:
+ *       200:
+ *         description: CV with evaluation retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     personalInfo:
+ *                       type: object
+ *                     summary:
+ *                       type: string
+ *                     education:
+ *                       type: array
+ *                     experience:
+ *                       type: array
+ *                     skills:
+ *                       type: array
+ *                     evaluation:
+ *                       type: object
+ *                       properties:
+ *                         score:
+ *                           type: number
+ *                         progress:
+ *                           type: number
+ *                         strengths:
+ *                           type: array
+ *                         improvements:
+ *                           type: array
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Not authorized, no token
+ *       404:
+ *         description: CV not found or not authorized
+ *       500:
+ *         description: Server error
+ */
+router.get('/:id/with-evaluation', protect, getCVWithEvaluation);
 
 module.exports = router; 
