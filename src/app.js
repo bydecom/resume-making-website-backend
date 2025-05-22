@@ -14,11 +14,25 @@ connectDB();
 
 const app = express();
 
+// CORS Configuration
+const corsOptions = {
+    origin: [
+        'http://localhost:3000',  // React development
+        'http://localhost:5173',  // Vite development
+        'https://your-frontend-domain.com', // Your production frontend domain
+        /\.onrender\.com$/ // Allow all subdomains on render.com
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true,
+    maxAge: 86400 // 24 hours
+};
+
 // Init middlewares
 app.use(morgan("dev"));
 app.use(helmet());
 app.use(compression());
-app.use(cors());
+app.use(cors(corsOptions));
 
 // Body parsers with increased limits
 app.use(express.json({ limit: '10mb' }));
