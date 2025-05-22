@@ -14,10 +14,12 @@ const swaggerOptions = {
         },
         servers: [
             {
-                url: process.env.NODE_ENV === 'production' 
-                    ? 'https://resume-making-website-backend.onrender.com'
-                    : 'http://localhost:' + (process.env.PORT || 5000),
-                description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server'
+                url: 'https://resume-making-website-backend.onrender.com',
+                description: 'Production server'
+            },
+            {
+                url: 'http://localhost:5000',
+                description: 'Development server'
             }
         ],
         components: {
