@@ -134,6 +134,16 @@ class UserController {
                 hasPassword: !!user.password
             });
 
+            // Check if user is active
+            if (!user.isActive) {
+                console.log('Inactive user attempted login:', user._id);
+                return res.status(401).json({
+                    status: 'error',
+                    code: 'ACCOUNT_INACTIVE',
+                    message: 'Your account is inactive. Please contact support.'
+                });
+            }
+
             // Check password
             const isMatch = await user.matchPassword(password);
             

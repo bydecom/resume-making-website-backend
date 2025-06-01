@@ -27,6 +27,26 @@ const CHATBOT_RESPONSE_SCHEMA = {
   required: ["outputMessage", "currentTask"]
 };
 
+// Intent Detection Schema
+const INTENT_DETECTION_SCHEMA = {
+  type: "object",
+  properties: {
+    intent: {
+      type: "string",
+      description: "The detected intent from user message"
+    },
+    confidence: {
+      type: "number",
+      description: "Confidence score of the intent detection"
+    },
+    taskName: {
+      type: "string",
+      description: "Mapped task name based on the intent"
+    }
+  },
+  required: ["intent", "confidence", "taskName"]
+};
+
 // Default system instruction
 const DEFAULT_SYSTEM_INSTRUCTION = "You are a helpful CV/Resume writing assistant. Help users create and improve their CV/Resume content.";
 
@@ -48,6 +68,16 @@ const DEFAULT_GENERATION_CONFIG = {
   responseSchema: CHATBOT_RESPONSE_SCHEMA
 };
 
+// Intent Detection Configuration
+const INTENT_GENERATION_CONFIG = {
+  temperature: 0.1,
+  topP: 0.8,
+  topK: 20,
+  maxOutputTokens: 1024,
+  responseMimeType: "application/json",
+  responseSchema: INTENT_DETECTION_SCHEMA
+};
+
 // Validation helper
 const validateChatInput = (data) => {
     const errors = [];
@@ -63,6 +93,43 @@ const validateChatInput = (data) => {
     }
     
     return errors;
+};
+
+// Update validateFormData to safely handle undefined fields
+const validateFormData = (data) => {
+    if (!data) return {};
+
+    const result = {};
+    
+    // Only add fields that exist and are valid in the data
+    if (data.personalInfo && typeof data.personalInfo === 'object') result.personalInfo = data.personalInfo;
+    if (data.summary && typeof data.summary === 'string') result.summary = data.summary;
+    if (Array.isArray(data.education)) result.education = data.education;
+    if (Array.isArray(data.experience)) result.experience = data.experience;
+    if (Array.isArray(data.skills)) result.skills = data.skills;
+    if (Array.isArray(data.projects)) result.projects = data.projects;
+    if (Array.isArray(data.certifications)) result.certifications = data.certifications;
+    if (Array.isArray(data.languages)) result.languages = data.languages;
+    if (Array.isArray(data.customFields)) result.customFields = data.customFields;
+    if (data.roleApply && typeof data.roleApply === 'string') result.roleApply = data.roleApply;
+
+    return result;
+};
+
+// Update normalizeInputData to handle direct data structure
+const normalizeInputData = (currentData) => {
+    if (!currentData) return { data: {} };
+    
+    // If currentData already has personalInfo directly, it means it's the data itself
+    if (currentData.personalInfo || currentData.summary || currentData.experience) {
+        return { data: currentData };
+    }
+    
+    // If currentData is already in the correct format (has data property), return as is
+    if (currentData.data) return currentData;
+    
+    // Default case: wrap the data
+    return { data: currentData || {} };
 };
 
 // Helper function to get knowledge by taskName
@@ -98,6 +165,74 @@ const getKnowledgeByTaskName = async (taskName) => {
     } catch (error) {
         console.error('Error fetching knowledge:', error);
         throw error;
+    }
+};
+
+// Function to detect intent
+const detectIntent = async (userMessage, genAI) => {
+    try {
+        const model = genAI.getGenerativeModel({
+            model: 'gemini-1.5-flash-latest',
+            safetySettings: DEFAULT_SAFETY_SETTINGS
+        });
+
+        // Get available tasks from database
+        const taskDescriptions = await KnowledgeModel.getTaskDescriptions();
+        
+        // Format task descriptions for the prompt
+        const taskDescriptionText = taskDescriptions
+            .map(task => `- ${task.taskName}: ${task.description || task.title}`)
+            .join('\n');
+
+        const prompt = `
+        Analyze the following user message and detect the most appropriate intent and map it to a task name.
+        User Message: "${userMessage}"
+
+        Available Task Names and Descriptions:
+        ${taskDescriptionText}
+
+        Note: If the user's question doesn't clearly match any specific task, use "GENERAL" as the taskName.
+
+        Return the intent, confidence score, and mapped task name in the specified schema format.
+        Be very strict in mapping to these exact task names.
+        If unsure, default to GENERAL with lower confidence.
+        
+        Guidelines for confidence scoring:
+        - 0.9-1.0: Perfect match with task description
+        - 0.7-0.9: Clear match but might have some ambiguity
+        - 0.5-0.7: Moderate match with some uncertainty
+        - 0.3-0.5: Weak match, multiple possible interpretations
+        - 0.0-0.3: Very uncertain or no clear match`;
+
+        const result = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: INTENT_GENERATION_CONFIG,
+        });
+
+        const response = result.response;
+        const responseText = response.text();
+        const parsedResponse = JSON.parse(responseText);
+
+        // Validate that the detected taskName exists in our database
+        const availableTaskNames = await KnowledgeModel.getUniqueActiveTaskNames();
+        if (!availableTaskNames.includes(parsedResponse.taskName)) {
+            console.warn(`Detected invalid taskName: ${parsedResponse.taskName}. Falling back to GENERAL`);
+            return {
+                intent: parsedResponse.intent,
+                confidence: 0.3,
+                taskName: 'GENERAL'
+            };
+        }
+
+        return parsedResponse;
+    } catch (error) {
+        console.error('Intent detection error:', error);
+        // Default fallback
+        return {
+            intent: "general_query",
+            confidence: 0.5,
+            taskName: "GENERAL"
+        };
     }
 };
 
@@ -149,6 +284,8 @@ const getKnowledgeByTaskName = async (taskName) => {
  */
 exports.getChatResponse = async (req, res) => {
     try {
+        console.log('Raw request body:', JSON.stringify(req.body, null, 2));
+        
         const validationErrors = validateChatInput(req.body);
         if (validationErrors.length > 0) {
             return res.status(400).json({
@@ -157,14 +294,46 @@ exports.getChatResponse = async (req, res) => {
             });
         }
 
-        const { userMessage, taskName, currentData } = req.body;
+        const { userMessage, taskName: currentTaskName, currentData } = req.body;
+        console.log('Extracted currentData:', JSON.stringify(currentData, null, 2));
+        
+        const normalizedData = normalizeInputData(currentData);
+        console.log('After normalization:', JSON.stringify(normalizedData, null, 2));
+        
+        const currentFormData = validateFormData(normalizedData.data);
+        console.log('After validation:', JSON.stringify(currentFormData, null, 2));
+        
+        // Only get jobDescription and cvData if they exist
+        const jobDescription = normalizedData.data?.jobDescription;
+        const cvData = normalizedData.data?.originalCV || currentFormData;
 
-        // Lấy config Gemini theo taskName và có isActive = true
-        let geminiConfig = await GeminiApiConfig.findOne({ taskName: taskName, isActive: true });
+        // Initialize Gemini API once
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            console.error('GEMINI_API_KEY is not set in environment variables.');
+            throw new Error('Server configuration error: Missing API Key.');
+        }
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+
+        // Detect intent first
+        const intentResult = await detectIntent(userMessage, genAI);
+        console.log('Detected intent:', intentResult);
+
+        // Get knowledge based on detected intent's taskName
+        const knowledgeData = await getKnowledgeByTaskName(intentResult.taskName);
+        console.log(`Getting knowledge for detected task: ${intentResult.taskName}`);
+
+        // Use current task for UI context, but get config based on intent's task
+        let geminiConfig = await GeminiApiConfig.findOne({ 
+            taskName: intentResult.taskName, 
+            isActive: true 
+        });
+        
         let modelName, generationConfig, systemInstruction, safetySettings;
         
         if (geminiConfig) {
-            console.log(`Đã lấy được config ${taskName} từ DB`);
+            console.log(`Đã lấy được config ${intentResult.taskName} từ DB`);
             modelName = geminiConfig.modelName;
             
             // Convert Mongoose object to plain JavaScript object and clean up
@@ -181,7 +350,7 @@ exports.getChatResponse = async (req, res) => {
             generationConfig = {
                 ...DEFAULT_GENERATION_CONFIG,
                 ...dbGenerationConfig,
-                responseSchema: CHATBOT_RESPONSE_SCHEMA // Always use our schema
+                responseSchema: CHATBOT_RESPONSE_SCHEMA
             };
             generationConfig.responseMimeType = DEFAULT_GENERATION_CONFIG.responseMimeType;
             
@@ -193,68 +362,72 @@ exports.getChatResponse = async (req, res) => {
                 safetySettings = DEFAULT_SAFETY_SETTINGS;
             }
         } else {
-            console.log(`Không tìm thấy config ${taskName} trong DB hoặc config không active, dùng default`);
-            modelName = 'gemini-1.5-flash-latest'; // Model mặc định
+            console.log(`Không tìm thấy config ${intentResult.taskName} trong DB hoặc config không active, dùng default`);
+            modelName = 'gemini-1.5-flash-latest';
             generationConfig = DEFAULT_GENERATION_CONFIG;
             systemInstruction = DEFAULT_SYSTEM_INSTRUCTION;
             safetySettings = DEFAULT_SAFETY_SETTINGS;
         }
 
-        // Lấy knowledge theo taskName
-        const knowledgeData = await getKnowledgeByTaskName(taskName);
-
-        // Khởi tạo Gemini API
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            console.error('GEMINI_API_KEY is not set in environment variables.');
-            throw new Error('Server configuration error: Missing API Key.');
-        }
-
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-            model: modelName,
-            systemInstruction: systemInstruction,
-            safetySettings: safetySettings
-        });
-        const currentFormData = {
-            personalInfo: currentData.data.personalInfo,
-            summary: currentData.data.summary,
-            education: currentData.data.education,
-            experience: currentData.data.experience,
-            skills: currentData.data.skills,
-            projects: currentData.data.projects,
-            certifications: currentData.data.certifications,
-            languages: currentData.data.languages,
-            customFields: currentData.data.customFields,
-            roleApply: currentData.data.roleApply
-          };
-        const jobDescription = currentData.data.jobDescription;
-        console.log(jobDescription);
-        const cvData = currentData.data.originalCV;
-        console.log(cvData);
-
         try {
+            // Initialize model for chat
+            const model = genAI.getGenerativeModel({
+                model: modelName,
+                systemInstruction: systemInstruction,
+                safetySettings: safetySettings
+            });
+
             // Khởi tạo chat session
             const chatSession = model.startChat({
                 generationConfig,
-                history: [], // No history for now
+                history: [],
             });
 
-            // Chuẩn bị prompt
-            const prompt = `
-            The User Message is : ${userMessage}
-            Base on User current CV: ${JSON.stringify(cvData, null, 2)}
-            Abd Job Description: ${JSON.stringify(jobDescription, null, 2)}
-            help User improve Form Data they are editing: ${JSON.stringify(currentFormData, null, 2)}       
-            Knowledge To Answer: ${JSON.stringify(knowledgeData, null, 2)}
-            Based on the user's message and the provided knowledge:
-            1. Use the knowledge content to formulate a helpful response
-            2. If the knowledge doesn't contain relevant information, provide a general guidance
-            3. Keep the response focused on the current task: ${taskName}
-            4. Format the response according to the specified schema with:
-            - outputMessage: The main response to show to the user
+            // Build prompt only with available data
+            let promptParts = [
+                `The User Message is: ${userMessage}`,
+                `Current UI Context Task: ${currentTaskName}`,
+                `Detected Intent Task: ${intentResult.taskName}`,
+                ''  // Empty line for spacing
+            ];
+
+            // Only add CV data if it exists and has content
+            if (cvData && Object.keys(cvData).length > 0) {
+                promptParts.push(`Base on User current CV: ${JSON.stringify(cvData, null, 2)}`);
+            }
+
+            // Only add job description if it exists
+            if (jobDescription) {
+                promptParts.push(`And Job Description: ${JSON.stringify(jobDescription, null, 2)}`);
+            }
+
+            // Only add form data if it has content
+            if (Object.keys(currentFormData).length > 0) {
+                promptParts.push(`Current Form Data: ${JSON.stringify(currentFormData, null, 2)}`);
+            }
+
+            // Add knowledge base info
+            if (knowledgeData && knowledgeData.length > 0) {
+                promptParts.push(`Knowledge To Answer: ${JSON.stringify(knowledgeData, null, 2)}`);
+            }
+
+            // Add detected intent information
+            promptParts.push(`Detected Intent: ${JSON.stringify(intentResult, null, 2)}`);
+
+            // Add instructions
+            promptParts.push(`
+            Based on the user's message and the available information:
+            1. ${knowledgeData ? 'Use the knowledge content to formulate a helpful response' : 'Provide general guidance based on best practices'}
+            2. Focus on helping the user with their question about ${intentResult.taskName.toLowerCase().replace(/_/g, ' ')}
+            3. Note that while the user is in the ${currentTaskName} section, they are asking about ${intentResult.taskName}
+            4. Provide guidance that is relevant to their question, regardless of their current section
+
+            Format the response according to the specified schema with:
+            - outputMessage: The main response to show to the user, focused on their specific question
             - actionRequired: Any specific action the user needs to take (if applicable)
-            - currentTask: The current task being handled (${taskName})`;
+            - currentTask: Keep this as their current UI context (${currentTaskName}) to maintain UI state`);
+
+            const prompt = promptParts.join('\n\n');
 
             // Gửi prompt và nhận response
             const result = await chatSession.sendMessage(prompt);
@@ -269,7 +442,7 @@ exports.getChatResponse = async (req, res) => {
                 // If parsing fails, create a structured response
                 parsedResponse = {
                     outputMessage: responseText,
-                    currentTask: taskName
+                    currentTask: currentTaskName
                 };
             }
 
@@ -277,8 +450,10 @@ exports.getChatResponse = async (req, res) => {
                 status: 'success',
                 output: parsedResponse,
                 knowledge: knowledgeData,
-                data: currentData,
-                config: geminiConfig
+                data: normalizedData,
+                config: geminiConfig,
+                detectedIntent: intentResult,
+                currentUITask: currentTaskName
             });
         } catch (aiError) {
             console.error('Gemini API Error:', aiError);

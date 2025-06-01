@@ -1,0 +1,68 @@
+Core Technologies
+Node.js - JavaScript runtime environment
+Version: ^20.11.1
+Note: Used as the main runtime for the backend server
+Express.js - Web framework
+Version: ^4.21.2
+Note: Main framework for building the REST API
+Database
+MongoDB (via Mongoose)
+Version: ^8.10.1
+Note: Used as the primary database with Mongoose ODM
+Authentication & Security
+bcryptjs
+Version: ^2.4.3
+Note: Used for password hashing
+jsonwebtoken
+Version: ^9.0.0
+Note: Used for JWT-based authentication
+helmet
+Version: ^8.0.0
+Note: Security middleware for Express
+API Documentation
+swagger-jsdoc
+Version: ^6.2.8
+Note: Used for API documentation generation
+swagger-ui-express
+Version: ^5.0.0
+Note: Provides Swagger UI interface for API documentation
+AI/ML Integration
+@google/generative-ai
+Version: ^0.24.0
+Note: Google's Generative AI library for AI features
+Validation & Data Processing
+express-validator
+Version: ^7.2.1
+Note: Input validation and sanitization
+joi
+Version: ^17.12.0
+Note: Schema validation library
+body-parser
+Version: ^1.20.3
+Note: Request body parsing middleware
+Utilities
+dotenv
+Version: ^16.4.7
+Note: Environment variable management
+cors
+Version: ^2.8.5
+Note: Cross-Origin Resource Sharing middleware
+compression
+Version: ^1.8.0
+Note: Response compression middleware
+morgan
+Version: ^1.10.0
+Note: HTTP request logger middleware
+moment
+Version: ^2.30.1
+Note: Date manipulation library
+mime-types
+Version: ^3.0.1
+Note: MIME type utilities
+express-async-handler
+Version: ^1.2.0
+Note: Async error handling middleware
+Development Tools
+nodemon
+Version: ^3.1.9
+Note: Development server with auto-reload

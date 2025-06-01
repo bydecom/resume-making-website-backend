@@ -16,28 +16,33 @@ const app = express();
 
 // CORS Configuration
 const corsOptions = {
-    origin: [
-        'http://localhost:3000',  // React development
-        'http://localhost:5173',  // Vite development
-        'https://your-frontend-domain.com', // Your production frontend domain
-        /\.onrender\.com$/ // Allow all subdomains on render.com
-    ],
+    origin: '*', // Allow all origins for testing
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
     credentials: true,
-    maxAge: 86400 // 24 hours
+    maxAge: 86400
 };
 
 // Init middlewares
 app.use(morgan("dev"));
-app.use(helmet());
+
+// Configure Helmet
+app.use(
+    helmet({
+        contentSecurityPolicy: false,
+        crossOriginEmbedderPolicy: false,
+        crossOriginResourcePolicy: false
+    })
+);
+
 app.use(compression());
 app.use(cors(corsOptions));
 
 // Body parsers with increased limits
 app.use(express.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
-app.use(bodyParser.text({ type: 'text/plain', limit: '10mb' })); // Add text parser
+app.use(bodyParser.text({ type: 'text/plain', limit: '10mb' }));
 
 // Swagger documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));

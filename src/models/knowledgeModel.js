@@ -248,6 +248,54 @@ knowledgeSchema.statics.updateByTaskName = async function(taskName, updateData) 
   }
 };
 
+// Transform qaContent before saving
+knowledgeSchema.pre('save', function(next) {
+  if (this.qaContent && Array.isArray(this.qaContent)) {
+    // Remove _id field from qaContent items
+    this.qaContent = this.qaContent.map(qa => {
+      const { question, answer } = qa;
+      return { question, answer };
+    });
+  }
+  next();
+});
+
+// Helper method để lấy danh sách unique taskNames từ active knowledge
+knowledgeSchema.statics.getUniqueActiveTaskNames = async function() {
+    try {
+        const taskNames = await this.distinct('taskName', { isActive: true });
+        // Sort taskNames để có thứ tự ổn định
+        return taskNames.sort();
+    } catch (error) {
+        console.error('Error getting unique taskNames:', error);
+        throw error;
+    }
+};
+
+// Helper method để lấy thông tin chi tiết của mỗi task
+knowledgeSchema.statics.getTaskDescriptions = async function() {
+    try {
+        const tasks = await this.aggregate([
+            { $match: { isActive: true } },
+            { $group: {
+                _id: '$taskName',
+                description: { $first: '$description' },
+                title: { $first: '$title' }
+            }},
+            { $project: {
+                _id: 0,
+                taskName: '$_id',
+                description: 1,
+                title: 1
+            }}
+        ]);
+        return tasks.sort((a, b) => a.taskName.localeCompare(b.taskName));
+    } catch (error) {
+        console.error('Error getting task descriptions:', error);
+        throw error;
+    }
+};
+
 const KnowledgeModel = mongoose.model('Knowledge', knowledgeSchema);
 
 module.exports = KnowledgeModel; 
