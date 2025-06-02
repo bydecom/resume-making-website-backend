@@ -94,7 +94,7 @@ const qaSchema = new mongoose.Schema({
     required: [true, 'Câu trả lời là bắt buộc'],
     trim: true
   }
-});
+}, { _id: false }); // Disable _id for subdocuments
 
 const knowledgeSchema = new mongoose.Schema({
   title: {
@@ -212,12 +212,22 @@ knowledgeSchema.statics.findByTask = async function(taskName) {
 // Helper method to update knowledge by taskName
 knowledgeSchema.statics.updateByTaskName = async function(taskName, updateData) {
   try {
+    // Validate taskName
+    if (!taskName) {
+      throw new Error('TaskName is required');
+    }
+
+    // Log the update operation
+    console.log(`Attempting to update knowledge for taskName: ${taskName}`);
+    console.log('Update data:', JSON.stringify(updateData, null, 2));
+
+    // Find the document first
     const knowledge = await this.findOne({ taskName: taskName });
     if (!knowledge) {
       throw new Error(`No knowledge found with taskName: ${taskName}`);
     }
 
-    // Update allowed fields
+    // Define allowed fields for update
     const allowedUpdates = [
       'title',
       'description',
@@ -234,16 +244,42 @@ knowledgeSchema.statics.updateByTaskName = async function(taskName, updateData) 
     const filteredUpdate = Object.keys(updateData)
       .filter(key => allowedUpdates.includes(key))
       .reduce((obj, key) => {
-        obj[key] = updateData[key];
+        // Special handling for qaContent
+        if (key === 'qaContent' && Array.isArray(updateData[key])) {
+          // Remove _id fields from qaContent items
+          obj[key] = updateData[key].map(qa => ({
+            question: qa.question,
+            answer: qa.answer
+          }));
+        } else {
+          obj[key] = updateData[key];
+        }
         return obj;
       }, {});
 
-    // Apply updates
-    Object.assign(knowledge, filteredUpdate);
-    
-    // Save and return updated document
-    return await knowledge.save();
+    // Log filtered update data
+    console.log('Filtered update data:', JSON.stringify(filteredUpdate, null, 2));
+
+    // Use findOneAndUpdate with $set
+    const updatedKnowledge = await this.findOneAndUpdate(
+      { taskName: taskName },
+      { $set: filteredUpdate },
+      { 
+        new: true,        // Return the updated document
+        runValidators: true // Run schema validators
+      }
+    );
+
+    if (!updatedKnowledge) {
+      throw new Error('Update operation failed');
+    }
+
+    // Log the result
+    console.log('Update successful. Updated document:', JSON.stringify(updatedKnowledge, null, 2));
+
+    return updatedKnowledge;
   } catch (error) {
+    console.error('Error in updateByTaskName:', error);
     throw error;
   }
 };
