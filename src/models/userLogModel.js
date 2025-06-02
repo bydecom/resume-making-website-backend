@@ -110,7 +110,7 @@ const userLogSchema = new mongoose.Schema({
   }
 });
 
-// Đánh index cho trường thường sử dụng để query
+// Index for fields commonly used for querying
 userLogSchema.index({ userId: 1 });
 userLogSchema.index({ action: 1 });
 userLogSchema.index({ timestamp: -1 });

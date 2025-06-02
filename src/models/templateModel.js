@@ -65,7 +65,7 @@ const templateSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Đảm bảo chỉ có một template mặc định
+// Ensure only one default template
 templateSchema.pre('save', async function(next) {
     if (this.isDefault) {
         await this.constructor.updateMany(

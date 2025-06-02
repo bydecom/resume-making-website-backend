@@ -73,23 +73,23 @@ const getUserLogs = async (filter = {}, options = {}) => {
 };
 
 /**
- * Lấy thống kê hoạt động của người dùng
- * @param {string} userId - ID của người dùng
- * @param {Object} options - Tùy chọn thời gian
- * @returns {Promise<Object>} - Thống kê hoạt động
+ * Get user activity stats
+ * @param {string} userId - ID of user
+ * @param {Object} options - Time options
+ * @returns {Promise<Object>} - Activity stats
  */
 const getUserActivityStats = async (userId, options = {}) => {
   const today = new Date();
   const startDate = options.startDate ? new Date(options.startDate) : new Date(today.setDate(today.getDate() - 30));
   const endDate = options.endDate ? new Date(options.endDate) : new Date();
 
-  // Tổng số hoạt động trong khoảng thời gian
+  // Total activities in time range
   const totalActivities = await UserLog.countDocuments({
     userId,
     timestamp: { $gte: startDate, $lte: endDate }
   });
 
-  // Phân loại hoạt động theo loại
+  // Classify activities by type
   const activityByType = await UserLog.aggregate([
     {
       $match: {
@@ -108,7 +108,7 @@ const getUserActivityStats = async (userId, options = {}) => {
     }
   ]);
 
-  // Hoạt động theo thời gian (ngày)
+  // Activities by time (day)
   const activityByDate = await UserLog.aggregate([
     {
       $match: {
@@ -135,24 +135,23 @@ const getUserActivityStats = async (userId, options = {}) => {
 };
 
 /**
- * Lấy danh sách logs của tất cả người dùng
- * @param {Object} filter - Điều kiện lọc
- * @param {Object} options - Tùy chọn phân trang
- * @returns {Promise<Object>} - Danh sách logs
+ * Get all user logs
+ * @param {Object} filter - Filter conditions
+ * @param {Object} options - Pagination options
+ * @returns {Promise<Object>} - List of logs
  */
 const getAllUserLogs = async (filter = {}, options = {}) => {
   const page = parseInt(options.page, 10) || 1;
   const limit = parseInt(options.limit, 10) || 10;
   const skip = (page - 1) * limit;
   
-  // Sử dụng options.sort nếu có, ngược lại dùng mặc định
+  // Use options.sort if provided, otherwise use default
   const sortOption = options.sort || { timestamp: -1 };
 
-  // Chỉ lọc các logs của user (không bao gồm admin logs)
+  // Only filter logs of users (excluding admin logs)
   const userFilter = { ...filter };
   
-  // Nếu muốn loại trừ admin, bạn có thể thêm điều kiện join với bảng User
-  // và lọc theo role !== 'admin'
+    //Filter by role !== 'admin'
 
   const logs = await UserLog.find(userFilter)
     .sort(sortOption)  // Sử dụng sortOption thay vì hardcode

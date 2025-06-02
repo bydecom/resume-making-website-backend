@@ -64,6 +64,6 @@ const cvSnapshotSchema = new mongoose.Schema({
     label: String,
     value: String
   }]
-}, { _id: false }); // Không tạo _id phụ cho mỗi snapshot
+}, { _id: false }); // Do not create _id for each snapshot
 
 module.exports = cvSnapshotSchema; 

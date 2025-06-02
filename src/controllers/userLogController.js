@@ -609,14 +609,14 @@ exports.getTemplateDownloadStats = async (req, res) => {
     return res.status(200).json({
       status: 'success',
       data: formatted,
-      message: 'Thống kê lượt download theo template thành công'
+      message: 'Template download statistics retrieved successfully'
     });
   } catch (error) {
     console.error('Error retrieving template download stats:', error);
     return res.status(500).json({
       status: 'error',
       code: 'SERVER_ERROR',
-      message: 'Lỗi server khi lấy thống kê template download'
+      message: 'Server error when retrieving template download statistics'
     });
   }
 };

@@ -1,6 +1,5 @@
 # Thiết kế hệ thống CV cho nhiều CV trên mỗi User với JWT
 
-Dựa trên thông tin bạn cung cấp, tôi sẽ hướng dẫn cách triển khai hệ thống cho phép mỗi User có nhiều CV và sử dụng JWT để xác thực.
 
 ## 1. Cấu trúc database MongoDB
 

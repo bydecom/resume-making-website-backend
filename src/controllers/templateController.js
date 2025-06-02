@@ -102,7 +102,7 @@ exports.updateTemplate = async (req, res) => {
             });
         }
 
-        // Nếu template này được set làm default, bỏ default của các template khác
+        // If this template is set as default, remove default from other templates
         if (isDefault) {
             await Template.updateMany(
                 { templateId: { $ne: req.params.templateId } },
@@ -160,15 +160,15 @@ exports.syncTemplates = async (req, res) => {
             });
         }
 
-        // Xử lý từng template
+        // Process each template
         const results = await Promise.all(templates.map(async (template) => {
             const { id, name, description, previewImage, category, isDefault, isActive } = template;
 
-            // Tìm template trong DB
+            // Find template in DB
             let existingTemplate = await Template.findOne({ templateId: id });
 
             if (existingTemplate) {
-                // Cập nhật template đã tồn tại
+                // Update existing template
                 existingTemplate.name = name;
                 existingTemplate.description = description;
                 existingTemplate.previewImage = previewImage;
@@ -224,7 +224,7 @@ exports.syncTemplates = async (req, res) => {
  */
 exports.getAllTemplateStats = async (req, res) => {
     try {
-        // Lọc theo khoảng thời gian nếu có
+        // Filter by time period if provided
         let startDate = req.query.startDate ? new Date(req.query.startDate) : null;
         let endDate = req.query.endDate ? new Date(req.query.endDate) : null;
         const { period } = req.query;
@@ -246,47 +246,47 @@ exports.getAllTemplateStats = async (req, res) => {
             }
         }
 
-        // Lấy tất cả templates
+        // Get all templates
         const templates = await Template.find().select('-__v');
 
-        // Thống kê cho từng template
+        // Statistics for each template
         const stats = await Promise.all(templates.map(async (template) => {
-            // Điều kiện thời gian cho logs
+            // Time filter for logs
             const timeFilter = {};
             if (startDate && endDate) {
                 timeFilter.timestamp = { $gte: startDate, $lte: endDate };
             }
 
-            // 1. Tổng số CV đã tạo với template này
+            // 1. Total number of CVs created with this template
             const totalCVs = await CV.countDocuments({ 
                 'template.id': template.templateId,
             });
             
-            // 2. Số CV đang active với template này (chưa bị xóa)
+            // 2. Number of active CVs with this template (not deleted)
             const activeCVs = await CV.countDocuments({ 
                 'template.id': template.templateId,
                 is_deleted: false
             });
 
-            // 3. Tổng số Resume đã tạo với template này
+            // 3. Total number of resumes created with this template
             const totalResumes = await Resume.countDocuments({ 
                 'template.id': template.templateId,
             });
             
-            // 4. Số Resume đang active với template này (chưa bị xóa)
+            // 4. Number of active resumes with this template (not deleted)
             const activeResumes = await Resume.countDocuments({ 
                 'template.id': template.templateId,
                 is_deleted: false
             });
 
-            // 5. Số lượt download CV
+            // 5. Number of CV downloads
             const cvDownloads = await UserLog.countDocuments({
                 action: 'download_cv',
                 'details.templateId': template.templateId,
                 ...timeFilter
             });
 
-            // 6. Số lượt download Resume
+            // 6. Number of resume downloads
             const resumeDownloads = await UserLog.countDocuments({
                 action: 'download_resume',
                 'details.templateId': template.templateId,
@@ -318,7 +318,7 @@ exports.getAllTemplateStats = async (req, res) => {
             };
         }));
 
-        // Tính tổng số liệu của tất cả templates
+        // Calculate totals for all templates
         const totals = stats.reduce((acc, curr) => {
             return {
                 cv: {
@@ -378,7 +378,7 @@ exports.getTemplateStats = async (req, res) => {
             });
         }
 
-        // Lọc theo khoảng thời gian nếu có
+        // Filter by time period if provided
         let startDate = req.query.startDate ? new Date(req.query.startDate) : null;
         let endDate = req.query.endDate ? new Date(req.query.endDate) : null;
         const { period } = req.query;
@@ -400,51 +400,51 @@ exports.getTemplateStats = async (req, res) => {
             }
         }
 
-        // Điều kiện thời gian cho logs
+        // Time filter for logs
         const timeFilter = {};
         if (startDate && endDate) {
             timeFilter.timestamp = { $gte: startDate, $lte: endDate };
         }
 
-        // 1. Tổng số CV đã tạo với template này
+        // 1. Total number of CVs created with this template
         const totalCVs = await CV.countDocuments({ 
             'template.id': templateId,
             is_deleted: { $ne: true }
         });
         
-        // 2. Số CV đang active với template này (chưa bị xóa)
+        // 2. Number of active CVs with this template (not deleted)
         const activeCVs = await CV.countDocuments({ 
             'template.id': templateId,
             is_deleted: false
         });
 
-        // 3. Tổng số Resume đã tạo với template này
+        // 3. Total number of resumes created with this template
         const totalResumes = await Resume.countDocuments({ 
             'template.id': templateId,
             is_deleted: { $ne: true }
         });
         
-        // 4. Số Resume đang active với template này (chưa bị xóa)
+        // 4. Number of active resumes with this template (not deleted)
         const activeResumes = await Resume.countDocuments({ 
             'template.id': templateId,
             is_deleted: false
         });
 
-        // 5. Số lượt download CV
+        // 5. Number of CV downloads
         const cvDownloads = await UserLog.countDocuments({
             action: 'download_cv',
             'details.templateId': templateId,
             ...timeFilter
         });
 
-        // 6. Số lượt download Resume
+        // 6. Number of resume downloads
         const resumeDownloads = await UserLog.countDocuments({
             action: 'download_resume',
             'details.templateId': templateId,
             ...timeFilter
         });
 
-        // 7. Thống kê download theo tháng
+        // 7. Monthly download statistics
         const downloadStats = await UserLog.aggregate([
             {
                 $match: {
@@ -468,7 +468,7 @@ exports.getTemplateStats = async (req, res) => {
             }
         ]);
 
-        // Định dạng lại thống kê theo tháng
+        // Format statistics by month
         const monthlyStats = {};
         downloadStats.forEach(stat => {
             const year = stat._id.year;

@@ -70,10 +70,10 @@ const validateKnowledgeInput = (data) => {
  *                 example: "Skills Section Writing Guide"
  *               description:
  *                 type: string
- *                 example: "Hướng dẫn và Q&A về cách viết phần kỹ năng trong CV"
+ *                 example: "Guide and Q&A about how to write the skills section in CV"
  *               textContent:
  *                 type: string
- *                 example: "# Hướng dẫn viết phần Skills trong CV\n\n## Nguyên tắc cơ bản..."
+ *                 example: "# Guide and Q&A about how to write the skills section in CV\n\n## Basic principles..."
  *               qaContent:
  *                 type: array
  *                 items:
@@ -81,10 +81,10 @@ const validateKnowledgeInput = (data) => {
  *                   properties:
  *                     question:
  *                       type: string
- *                       example: "Nên liệt kê bao nhiêu kỹ năng trong CV?"
+ *                       example: "How many skills should I list in CV?"
  *                     answer:
  *                       type: string
- *                       example: "Nên liệt kê 5-7 kỹ năng chính cho mỗi nhóm..."
+ *                       example: "You should list 5-7 skills for each group..."
  *               taskName:
  *                 type: string
  *                 example: "CV_SKILLS"
@@ -92,7 +92,7 @@ const validateKnowledgeInput = (data) => {
  *                 type: array
  *                 items:
  *                   type: string
- *                 example: ["CV", "skills", "kỹ năng"]
+ *                 example: ["CV", "skills", "skills section"]
  *               priority:
  *                 type: number
  *                 example: 1

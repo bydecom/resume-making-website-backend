@@ -335,13 +335,13 @@ const DEFAULT_GENERATION_CONFIG = {
  */
 const extractCVFromText = async (req, res) => {
   try {
-    // Xử lý dữ liệu đầu vào
+    // Process input data
     let text;
     
-    // Kiểm tra và xử lý req.body
+    // Check and process req.body
     if (typeof req.body === 'string') {
       try {
-        // Nếu req.body là chuỗi, thử phân tích nó thành JSON
+        // If req.body is a string, try to parse it as JSON
         const parsedBody = JSON.parse(req.body);
         text = parsedBody.text;
       } catch (parseError) {
@@ -353,7 +353,7 @@ const extractCVFromText = async (req, res) => {
         });
       }
     } else if (req.body && typeof req.body === 'object') {
-      // Nếu req.body đã là object, lấy text trực tiếp
+      // If req.body is already an object, get text directly
       text = req.body.text;
     } else {
       return res.status(400).json({
@@ -372,18 +372,18 @@ const extractCVFromText = async (req, res) => {
       });
     }
     
-    // Đảm bảo text là chuỗi an toàn
+    // Ensure text is a safe string
     text = String(text).trim();
 
-    // Lấy config Gemini theo taskName 'extract_cv' và có isActive = true, nếu không có thì dùng mặc định
+    // Get Gemini config by taskName 'extract_cv' and isActive = true, otherwise use default
     let geminiConfig = await GeminiApiConfig.findOne({ taskName: 'extract_cv', isActive: true });
     let modelName, generationConfig, systemInstruction, safetySettings;
     
     if (geminiConfig) {
-      console.log('đã lấy được config extract_cv từ DB');
+      console.log('got config extract_cv from DB');
       modelName = geminiConfig.modelName;
       
-      // Convert Mongoose object to plain JavaScript object and clean up
+      // Convert Mongoose object to plain Ja  vaScript object and clean up
       const dbGenerationConfig = geminiConfig.generationConfig ? 
           JSON.parse(JSON.stringify(geminiConfig.generationConfig)) : {};
       

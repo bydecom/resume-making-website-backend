@@ -82,22 +82,22 @@ const jobDescriptionSchema = new mongoose.Schema({
     applicationStatus: {
         type: String,
         enum: [
-            'Not Applied', // Chưa ứng tuyển (Trạng thái mặc định)
-            'Applied',     // Đã ứng tuyển
-            'Interview',   // Được gọi phỏng vấn (Approved)
-            'Rejected'     // Bị từ chối
+            'Not Applied',
+            'Applied',
+            'Interview',
+            'Rejected'
          ],
         default: 'Not Applied'
     },
     interviewDate: {
         type: Date,
-        default: null // Chỉ có giá trị khi status là 'Interview'
-    },
-    interviewTime: { // Có thể lưu giờ riêng cho dễ hiển thị
-        type: String, // Ví dụ: "09:30", "14:00"
         default: null
     },
-    interviewLocation: { // Địa điểm hoặc link online meeting
+    interviewTime: { 
+        type: String,
+        default: null
+    },
+    interviewLocation: { 
         type: String,
         default: null
     },

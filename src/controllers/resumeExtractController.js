@@ -188,47 +188,47 @@ const DEFAULT_GENERATION_CONFIG = {
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 /**
- * @desc    Tạo resume phù hợp từ CV và JD
+ * @desc    Create a tailored resume from CV and JD
  * @route   POST /api/resumes/match
  * @access  Private
  */
 const extractResumeFromCVAndJD = asyncHandler(async (req, res) => {
     const { cvId, jobDescriptionId, templateId } = req.body;
 
-    // Kiểm tra input
+    // Check input
     if (!cvId || !jobDescriptionId) {
         res.status(400);
         throw new Error('Please provide both CV ID and Job Description ID');
     }
 
     try {
-        // Lấy thông tin CV
+        // Get CV information
         const cv = await CV.findById(cvId);
         if (!cv) {
             res.status(404);
             throw new Error('CV not found');
         }
 
-        // Kiểm tra quyền sở hữu CV
+        // Check ownership of CV
         if (cv.userId.toString() !== req.user._id.toString()) {
             res.status(403);
             throw new Error('Not authorized to access this CV');
         }
 
-        // Lấy thông tin Job Description
+        // Get Job Description information
         const jobDescription = await JobDescription.findById(jobDescriptionId);
         if (!jobDescription) {
             res.status(404);
             throw new Error('Job Description not found');
         }
 
-        // Kiểm tra quyền sở hữu Job Description
+        // Check ownership of Job Description
         if (jobDescription.userId.toString() !== req.user._id.toString()) {
             res.status(403);
             throw new Error('Not authorized to access this Job Description');
         }
 
-        // Lấy config Gemini theo taskName 'match_resume' và có isActive = true, nếu không có thì dùng mặc định
+        // Get Gemini config by taskName 'match_resume' and isActive = true, if not found use default
         let geminiConfig = await GeminiApiConfig.findOne({ taskName: 'match_resume', isActive: true });
         let modelName, generationConfig, systemInstruction, safetySettings;
         
@@ -262,8 +262,8 @@ const extractResumeFromCVAndJD = asyncHandler(async (req, res) => {
               safetySettings = DEFAULT_SAFETY_SETTINGS;
           }
         } else {
-            console.log('Không tìm thấy config trong DB hoặc config không active, dùng default.');
-            modelName = 'gemini-1.5-flash'; // Model mặc định
+            console.log('Not found config in DB or config is not active, using default.');
+            modelName = 'gemini-1.5-flash'; // Default model
             generationConfig = DEFAULT_GENERATION_CONFIG;
             systemInstruction = DEFAULT_SYSTEM_INSTRUCTION;
             safetySettings = DEFAULT_SAFETY_SETTINGS;
@@ -337,16 +337,15 @@ const extractResumeFromCVAndJD = asyncHandler(async (req, res) => {
                 });
             }
 
-            // Tạo resume mới với templateId
+            // Create new resume with templateId
             const resume = await Resume.create({
                 userId: req.user._id,
                 cvId: cv._id,
                 jobDescriptionId: jobDescription._id,
                 name: `Resume for ${cv.personalInfo.firstName} ${cv.personalInfo.lastName} - ${jobDescription.position}`,
-                // Thêm trường template với templateId từ request hoặc dùng default
                 template: templateId ? {
                     id: templateId,
-                    name: getTemplateName(templateId) // Bạn cần thêm hàm này để lấy tên template từ ID
+                    name: getTemplateName(templateId) 
                 } : {
                     id: "professionalBlue",
                     name: "Professional Blue"
@@ -366,7 +365,7 @@ const extractResumeFromCVAndJD = asyncHandler(async (req, res) => {
                 isDefault: false
             });
 
-            // Log tạo resume (create_resume)
+            // Log create resume (create_resume)
             await UserLog.create({
                 userId: req.user._id,
                 action: 'create_resume',
@@ -440,9 +439,8 @@ const extractResumeFromCVAndJD = asyncHandler(async (req, res) => {
     }
 });
 
-// Hàm phụ trợ để lấy tên template từ ID
+// Helper function to get template name from ID
 function getTemplateName(templateId) {
-    // Đây chỉ là ví dụ, bạn nên thay bằng logic phù hợp với hệ thống của bạn
     const templates = {
         "professionalBlue": "Professional Blue",
         "modernMinimal": "Modern Minimal",
@@ -454,7 +452,7 @@ function getTemplateName(templateId) {
     return templates[templateId] || "Default Template";
 }
 
-// Định nghĩa schema response cho resumeTips
+// Define response schema for resumeTips
 const RESUME_TIPS_RESPONSE_SCHEMA = {
           type: "object",
           properties: {

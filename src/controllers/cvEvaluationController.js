@@ -246,7 +246,7 @@ const getCVEvaluation = async (req, res) => {
     const { cvId } = req.params;
     const userId = req.user._id;
 
-    // Kiểm tra xem CV có tồn tại và thuộc về người dùng hiện tại không
+    // Check if CV exists and belongs to the current user
     const cv = await CV.findOne({ _id: cvId, userId });
     if (!cv) {
       return res.status(404).json({
@@ -256,7 +256,7 @@ const getCVEvaluation = async (req, res) => {
       });
     }
 
-    // Tìm đánh giá
+    // Find evaluation
     const evaluation = await CVEvaluation.findOne({ cv: cvId });
     
     if (!evaluation) {

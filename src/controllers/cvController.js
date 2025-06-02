@@ -144,7 +144,7 @@ const updateCV = async (req, res) => {
       });
     }
     
-    // Lấy dữ liệu CV trước khi cập nhật
+    // Get CV data before update
     const oldCV = await CV.findOne({ _id: cvId, userId: userId });
     
     if (!oldCV) {
@@ -155,7 +155,7 @@ const updateCV = async (req, res) => {
       });
     }
     
-    // Lưu bản sao của CV cũ
+    // Save old CV data
     const cvBeforeUpdate = oldCV.toObject();
     
     // Cập nhật CV, đảm bảo nó thuộc về người dùng
@@ -165,9 +165,9 @@ const updateCV = async (req, res) => {
       { new: true, runValidators: true }
     );
     
-    // Không cần phân tích sự thay đổi vì chỉ lưu dữ liệu trước và sau
+    // No need to analyze changes because only save old and new data
     
-    // Log CV update với dữ liệu trước và sau khi cập nhật
+    // Log CV update with old and new data
     await UserLog.create({
       userId: userId,
       action: 'update_cv',
@@ -228,7 +228,7 @@ const updateCVName = async (req, res) => {
       });
     }
     
-    // Lấy CV trước khi cập nhật để lưu trữ trạng thái trước đó
+    // Get CV before update to save previous state
     const oldCV = await CV.findOne({ _id: cvId, userId: userId });
     
     if (!oldCV) {
@@ -239,20 +239,20 @@ const updateCVName = async (req, res) => {
       });
     }
     
-    // Lưu trữ tên cũ
+    // Save old name
     const oldCVData = {
       _id: oldCV._id,
       name: oldCV.name
     };
     
-    // Cập nhật tên CV
+    // Update CV name
     const updatedCV = await CV.findOneAndUpdate(
       { _id: cvId, userId: userId }, 
       { name: name.trim(), updatedAt: new Date() },
       { new: true }
     );
     
-    // Log việc cập nhật tên CV với thông tin trước và sau khi thay đổi
+    // Log CV name update with previous and updated data
     await UserLog.create({
       userId: userId,
       action: 'update_cv_name',
@@ -472,7 +472,7 @@ const getUserCVsWithEvaluations = async (req, res) => {
 };
 
 /**
- * @desc    Lấy chi tiết một CV kèm theo đánh giá
+ * @desc    Get details of a CV with evaluation
  * @route   GET /api/cv/:id/with-evaluation
  * @access  Private
  */
@@ -491,10 +491,10 @@ const getCVWithEvaluation = async (req, res) => {
       });
     }
 
-    // Tìm đánh giá cho CV này
+    // Find evaluation for this CV
     const evaluation = await CVEvaluation.findOne({ cv: id }).lean();
 
-    // Kết hợp CV và đánh giá
+    // Combine CV and evaluation
     const cvWithEvaluation = {
       ...cv,
       evaluation: evaluation || null

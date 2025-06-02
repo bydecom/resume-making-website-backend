@@ -80,18 +80,18 @@ const mongoose = require('mongoose');
  *         updatedBy:
  *           type: mongoose.Schema.Types.ObjectId
  *           ref: 'User'
- *           description: Người cập nhật knowledge gần nhất
+ *           description: Người cập nhật knowledg e gần nhất
  */
 
 const qaSchema = new mongoose.Schema({
   question: {
     type: String,
-    required: [true, 'Câu hỏi là bắt buộc'],
+    required: [true, 'Question is required'],
     trim: true
   },
   answer: {
     type: String,
-    required: [true, 'Câu trả lời là bắt buộc'],
+    required: [true, 'Answer is required'],
     trim: true
   }
 }, { _id: false }); // Disable _id for subdocuments
@@ -99,7 +99,7 @@ const qaSchema = new mongoose.Schema({
 const knowledgeSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: [true, 'Tiêu đề knowledge là bắt buộc'],
+    required: [true, 'Knowledge title is required'],
     trim: true,
   },
   description: {
@@ -108,35 +108,35 @@ const knowledgeSchema = new mongoose.Schema({
   },
   textContent: {
     type: String,
-    required: [false, 'Nội dung văn bản hướng dẫn không cần là bắt buộc'],
+    required: [false, 'Text content is not required'],
     trim: true
   },
   qaContent: {
     type: [qaSchema],
-    required: [false, 'Danh sách Q&A không cần là bắt buộc'],
+    required: [false, 'List of Q&A is not required'],
     validate: {
       validator: function(v) {
         return Array.isArray(v) && v.length > 0;
       },
-      message: 'Phải có ít nhất một cặp Q&A'
+      message: 'Must have at least one Q&A pair'
     }
   },
   type: {
     type: String,
-    required: [true, 'Loại knowledge là bắt buộc'],
+    required: [true, 'Knowledge type is required'],
     enum: ['GENERAL', 'SPECIFIC'],
     default: 'SPECIFIC'
   },
   taskName: {
     type: String,
-    required: [true, 'Task name là bắt buộc'],
+    required: [true, 'Task name is required'],
     validate: {
       validator: function(v) {
         if (this.type === 'GENERAL' && v !== 'GENERAL') {
-          throw new Error('General knowledge phải có taskName là GENERAL');
+          throw new Error('General knowledge must have taskName as GENERAL');
         }
         if (this.type === 'SPECIFIC' && v === 'GENERAL') {
-          throw new Error('Specific knowledge không được có taskName là GENERAL');
+          throw new Error('Specific knowledge cannot have taskName as GENERAL');
         }
         return true;
       }
@@ -149,7 +149,7 @@ const knowledgeSchema = new mongoose.Schema({
   priority: {
     type: Number,
     default: 0,
-    min: [0, 'Priority không được âm']
+    min: [0, 'Priority cannot be negative']
   },
   isActive: {
     type: Boolean,
@@ -173,7 +173,7 @@ const knowledgeSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Index để tối ưu tìm kiếm
+// Index to optimize search
 knowledgeSchema.index({ title: 'text', description: 'text', textContent: 'text' });
 knowledgeSchema.index({ taskName: 1 });
 knowledgeSchema.index({ tags: 1 });
@@ -186,14 +186,14 @@ knowledgeSchema.index(
   { unique: true }
 );
 
-// Virtual populate với GeminiApiConfig qua taskName
+// Virtual populate with GeminiApiConfig through taskName
 knowledgeSchema.virtual('relatedTask', {
   ref: 'GeminiApiConfig',
   localField: 'taskName',
   foreignField: 'taskName'
 });
 
-// Helper method để lấy general knowledge
+// Helper method to find general knowledge
 knowledgeSchema.statics.findGeneralKnowledge = async function() {
   return this.find({
     type: 'GENERAL',
@@ -201,7 +201,7 @@ knowledgeSchema.statics.findGeneralKnowledge = async function() {
   }).sort({ priority: -1 });
 };
 
-// Helper method để lấy knowledge theo task
+// Helper method to find knowledge by task
 knowledgeSchema.statics.findByTask = async function(taskName) {
   return this.find({
     taskName: taskName,
@@ -252,14 +252,14 @@ knowledgeSchema.statics.updateByTaskName = async function(taskName, updateData) 
             answer: qa.answer
           }));
         } else {
-          obj[key] = updateData[key];
+        obj[key] = updateData[key];
         }
         return obj;
       }, {});
 
     // Log filtered update data
     console.log('Filtered update data:', JSON.stringify(filteredUpdate, null, 2));
-
+    
     // Use findOneAndUpdate with $set
     const updatedKnowledge = await this.findOneAndUpdate(
       { taskName: taskName },
@@ -296,11 +296,11 @@ knowledgeSchema.pre('save', function(next) {
   next();
 });
 
-// Helper method để lấy danh sách unique taskNames từ active knowledge
+// Helper method to get list of unique active taskNames from active knowledge
 knowledgeSchema.statics.getUniqueActiveTaskNames = async function() {
     try {
         const taskNames = await this.distinct('taskName', { isActive: true });
-        // Sort taskNames để có thứ tự ổn định
+        // Sort taskNames to have a stable order
         return taskNames.sort();
     } catch (error) {
         console.error('Error getting unique taskNames:', error);
@@ -308,7 +308,7 @@ knowledgeSchema.statics.getUniqueActiveTaskNames = async function() {
     }
 };
 
-// Helper method để lấy thông tin chi tiết của mỗi task
+// Helper method to get detailed information for each task
 knowledgeSchema.statics.getTaskDescriptions = async function() {
     try {
         const tasks = await this.aggregate([

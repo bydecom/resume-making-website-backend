@@ -209,15 +209,15 @@ const extractJobDescriptionFromText = async (req, res) => {
       });
     }
     
-    // Đảm bảo text là chuỗi an toàn
+    // Ensure text is a safe string
     text = String(text).trim();
 
-    // Lấy config Gemini theo taskName 'extract_job_description' và có isActive = true, nếu không có thì dùng mặc định
+    // Get Gemini config by taskName 'extract_job_description' and isActive = true, otherwise use default
     let geminiConfig = await GeminiApiConfig.findOne({ taskName: 'extract_job_description', isActive: true });
     let modelName, generationConfig, systemInstruction, safetySettings;
     
     if (geminiConfig) {
-      console.log('đã lấy được config extract_job_description từ DB');
+      console.log('got config extract_job_description from DB');
       modelName = geminiConfig.modelName;
       
       // Convert Mongoose object to plain JavaScript object and clean up
@@ -239,20 +239,20 @@ const extractJobDescriptionFromText = async (req, res) => {
       generationConfig.responseMimeType = DEFAULT_GENERATION_CONFIG.responseMimeType;
       systemInstruction = geminiConfig.systemInstruction || DEFAULT_SYSTEM_INSTRUCTION;
       if (geminiConfig.safetySettings && geminiConfig.safetySettings.length > 0) {
-        // Làm sạch safetySettings nếu nó là Mongoose array
+        // Clean safetySettings if it is a Mongoose array
         safetySettings = JSON.parse(JSON.stringify(geminiConfig.safetySettings));
       } else {
         safetySettings = DEFAULT_SAFETY_SETTINGS;
       }
     } else {
-      console.log('Không tìm thấy config extract_job_description trong DB hoặc config không active, dùng default.');
-      modelName = 'gemini-1.5-flash'; // Model mặc định
+      console.log('Not found config extract_job_description in DB or config is not active, use default.');
+      modelName = 'gemini-1.5-flash'; // Default model
       generationConfig = DEFAULT_GENERATION_CONFIG;
       systemInstruction = DEFAULT_SYSTEM_INSTRUCTION;
       safetySettings = DEFAULT_SAFETY_SETTINGS;
     }
 
-    // Luôn dùng API key từ env cho bảo mật
+    // Always use API key from env for security
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       console.error('GEMINI_API_KEY is not set in environment variables.');
@@ -431,7 +431,7 @@ const extractJobDescriptionFromText = async (req, res) => {
 //         "country"
 //       ]
 //     },
-//     // ... giữ nguyên phần còn lại của schema hiện tại
+//    
 //   },
 //   required: [
 //     "personalInfo",

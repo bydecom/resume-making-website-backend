@@ -67,7 +67,7 @@ router.get('/cv/:id', protect, async (req, res) => {
       });
     }
 
-    // Ghi log hoạt động với chi tiết template
+    // Log activity with template details
     await UserLog.create({
       userId: req.user._id,
       action: 'download_cv',
@@ -76,7 +76,7 @@ router.get('/cv/:id', protect, async (req, res) => {
       details: {
         cvId: cvId,
         cvName: cv.name,
-        // Ưu tiên template từ CV nếu có, nếu không sử dụng thông tin từ frontend
+        // Prefer template from CV if available, otherwise use frontend information
         templateId: cv.template?.id || templateId,
         templateName: cv.template?.name || templateName,
         format: format,
@@ -86,8 +86,7 @@ router.get('/cv/:id', protect, async (req, res) => {
       userAgent: req.headers['user-agent']
     });
 
-    // Ở đây bạn sẽ thêm logic để tạo file CV và trả về cho người dùng
-    // Tạm thời, hãy trả về thông báo thành công
+
     return res.status(200).json({
       status: 'success',
       message: `CV download tracked successfully. Format: ${format}`,
@@ -194,8 +193,6 @@ router.get('/resume/:id', protect, async (req, res) => {
       userAgent: req.headers['user-agent']
     });
 
-    // Ở đây bạn sẽ thêm logic để tạo file Resume và trả về cho người dùng
-    // Tạm thời, hãy trả về thông báo thành công
     return res.status(200).json({
       status: 'success',
       message: `Resume download tracked successfully. Format: ${format}`,
